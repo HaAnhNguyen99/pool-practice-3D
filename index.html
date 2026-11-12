@@ -47,6 +47,33 @@ select.ibtn option{background:#151922}
 .cutSide{display:grid;gap:4px;font-size:12.5px}
 .cutSide div{display:flex;justify-content:space-between;gap:8px}
 .cutSide span{color:var(--mut)} .cutSide b{font-variant-numeric:tabular-nums}
+.vid{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;cursor:pointer;margin-bottom:8px;border:1px solid var(--bd)}
+.vid img{width:100%;height:100%;object-fit:cover;opacity:.82;display:block}
+.vid .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.vid .play span{width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:22px;padding-left:4px}
+.vid .tag{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.65);border-radius:6px;padding:2px 7px;font-size:11.5px}
+.vid iframe{width:100%;height:100%;border:0;display:block}
+.clipMeta{font-size:13px;margin-bottom:6px}
+.clipMeta .mut{font-size:12px}
+.clipNav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.clipNav .chip{padding:5px 8px}
+.badge{display:inline-block;background:rgba(255,212,59,.12);color:var(--yel);border:1px solid rgba(255,212,59,.3);border-radius:7px;padding:1px 7px;font-size:12px;font-weight:600;margin-right:6px}
+.empty{font-size:13px;color:#c3c9d6;background:var(--glass2);border:1px dashed var(--bd);border-radius:10px;padding:10px;margin-bottom:8px}
+.empty a{color:var(--acc2)}
+details.add{margin-top:10px;border-top:1px solid var(--bd);padding-top:8px}
+details.add summary{cursor:pointer;color:var(--acc);font-size:13px;font-weight:600;list-style:none}
+details.add summary::-webkit-details-marker{display:none}
+.form{display:grid;gap:6px;margin-top:8px}
+.form input[type=text]{background:#11141a;border:1px solid var(--bd);border-radius:8px;color:var(--txt);padding:7px 9px;font:inherit;font-size:13px;width:100%}
+.form input[type=text]:focus{outline:none;border-color:var(--acc)}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.linkbtn{background:none;border:0;color:var(--acc2);cursor:pointer;font:inherit;font-size:12px;padding:0}
+.clipFoot{display:flex;gap:14px;margin-top:8px}
+#vidModal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:25}
+#vidModal.open{display:flex}
+#vidModal .box{width:min(1000px,94vw);padding:12px}
+#vidModal .frame{aspect-ratio:16/9;width:100%;border-radius:10px;overflow:hidden;background:#000}
+#vidModal iframe{width:100%;height:100%;border:0}
 #ovCanvas{width:100%;height:190px;display:block;border-radius:12px;background:#0d1117;border:1px solid var(--bd);margin-bottom:10px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .kpi{background:var(--glass2);border:1px solid var(--bd);border-radius:12px;padding:9px 11px}
@@ -175,6 +202,22 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
     <canvas id="ovCanvas"></canvas>
     <div class="aimtip" id="cutTip" style="margin-bottom:0"></div>
   </div>
+  <div id="clipCard" class="glass card">
+    <div class="cardHead"><b>🎬 Clip cơ thủ chuyên nghiệp</b><span id="clipBucket"></span></div>
+    <div id="clipBody"></div>
+    <details class="add" id="clipAdd"><summary>+ Thêm clip cho thế bi này</summary>
+      <div class="form">
+        <div class="note" style="margin:0">Dựng thế bi trên bàn 3D <b>giống cú đánh trong clip</b> (kéo bi, chọn lỗ). Góc cắt của clip sẽ lấy theo thế bi đó: <b id="caTheta" style="color:var(--yel)">—</b></div>
+        <input type="text" id="caUrl" placeholder="Link YouTube (youtu.be/… hoặc youtube.com/watch?v=…)">
+        <div class="two"><input type="text" id="caStart" placeholder="Bắt đầu (mm:ss)"><input type="text" id="caEnd" placeholder="Kết thúc (mm:ss)"></div>
+        <input type="text" id="caPlayer" placeholder="Tên cơ thủ">
+        <input type="text" id="caNote" placeholder="Giải đấu / ghi chú (tuỳ chọn)">
+        <button class="ibtn pri" id="caSave">Lưu clip</button>
+        <div class="note" id="caMsg" style="margin:0"></div>
+      </div>
+    </details>
+    <div class="clipFoot"><button class="linkbtn" id="clipExport">⭳ Xuất JSON</button><button class="linkbtn" id="clipImport">⭱ Nhập JSON</button><input type="file" id="clipFile" accept=".json,application/json" hidden></div>
+  </div>
   <div id="quizCard" class="glass card hidden"></div>
   <div id="panel" class="glass card">
     <div class="cardHead"><b>Thông số cú đánh</b></div>
@@ -206,6 +249,10 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
   </div>
 </div>
 
+<div id="vidModal"><div class="box glass">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b id="vmTitle"></b><button class="ibtn" id="vmClose">Đóng</button></div>
+  <div class="frame" id="vmFrame"></div>
+</div></div>
 <div id="modal"><div class="box glass">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <b>Bảng quy đổi chồng lấn ↔ góc cắt</b><button class="ibtn" id="closeModal">Đóng</button>
@@ -684,6 +731,7 @@ function updatePanel(g,hide){
   $('#cutOff').textContent=q??(bad?'—':(g.offset/R).toFixed(2)+'R ('+(g.offset*25.4).toFixed(0)+'mm)');
   $('#cutTip').innerHTML=hide?'Đoán góc cắt bằng thanh trượt bên dưới, rồi bấm <b>Kiểm tra</b>.':bad?'⛔ Góc cắt tối đa về lý thuyết là <b>90°</b> (chạm mỏng nhất). Trên 90° bi cái không thể chạm vào đúng điểm để đẩy bi mục tiêu về lỗ. Thực tế, góc trên khoảng 80–85° đã gần như không thể đánh vào.':'🎯 '+aimText(g);
   drawCut(g,hide);
+  renderClips(g,hide);
   const n=hide?-1:Math.round(g.overlap*8);
   document.querySelectorAll('#refTable tr[data-n]').forEach(tr=>tr.classList.toggle('cur',+tr.dataset.n===n));
 }
@@ -885,6 +933,104 @@ document.querySelectorAll('#qTypeSeg button').forEach(b=>b.onclick=()=>{
   $('#ovChips').classList.toggle('hidden',state.quiz.type!=='overlap');
   newQuiz();
 });
+
+// ================= Clip cơ thủ chuyên nghiệp =================
+// Clip dùng chung (commit vào repo). Mỗi clip: {id, yt, start, end, player, note, angle, layout:{size,cb,ob,pocket}}
+// angle = góc cắt đo từ thế bi được dựng lại trên bàn 3D (layout), không phải con số ước đoán.
+const SEED_CLIPS = [];
+const CLIP_KEY='pooltrainer.clips.v1', CLIP_RANGE=7.5;   // hiện clip có góc lệch ≤ 7.5° so với góc hiện tại
+const loadUserClips=()=>{try{return JSON.parse(localStorage.getItem(CLIP_KEY))||[]}catch{return[]}};
+const saveUserClips=a=>localStorage.setItem(CLIP_KEY,JSON.stringify(a));
+const allClips=()=>[...SEED_CLIPS.map(c=>({...c,seed:true})),...loadUserClips()];
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function ytId(u){u=String(u).trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);return m?m[1]:(/^[A-Za-z0-9_-]{11}$/.test(u)?u:null);}
+function ytUrlTime(u){const m=String(u).match(/[?&#](?:t|start)=([0-9hms]+)/);if(!m)return null;const v=m[1];
+  if(/^\d+$/.test(v))return +v;const h=+(v.match(/(\d+)h/)||[0,0])[1],mi=+(v.match(/(\d+)m/)||[0,0])[1],se=+(v.match(/(\d+)s/)||[0,0])[1];return h*3600+mi*60+se;}
+function parseTime(t){t=String(t||'').trim();if(!t)return null;if(/^\d+(\.\d+)?$/.test(t))return Math.round(+t);
+  const p=t.split(':').map(Number);if(p.some(isNaN))return NaN;return p.reduce((a,x)=>a*60+x,0);}
+const fmtTime=s=>s==null?'':`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const embedSrc=c=>`https://www.youtube-nocookie.com/embed/${c.yt}?autoplay=1&rel=0&playsinline=1&modestbranding=1${c.start!=null?'&start='+c.start:''}${c.end!=null?'&end='+c.end:''}`;
+const watchUrl=c=>`https://www.youtube.com/watch?v=${c.yt}${c.start?'&t='+c.start+'s':''}`;
+const SEARCH_Q={8:'straight in shot',7:'thick cut shot',6:'3/4 ball hit',5:'5/8 ball cut shot',4:'half ball hit cut shot',3:'3/8 ball cut shot',2:'quarter ball cut shot',1:'thin cut shot',0:'extreme thin cut shot'};
+let clipView={key:'',idx:0,playing:false,list:[]};
+function renderClips(g,hide){
+  $('#clipCard').classList.toggle('hidden',hide);
+  if(hide)return;
+  const th=g.theta/DEG;
+  $('#caTheta').textContent=g.phys?th.toFixed(1)+'°':'không hợp lệ (> 90°)';
+  const list=g.phys?allClips().map(c=>({...c,d:Math.abs(c.angle-th)})).filter(c=>c.d<=CLIP_RANGE).sort((a,b)=>a.d-b.d):[];
+  $('#clipBucket').textContent=g.phys?`~${th.toFixed(0)}° · ${list.length} clip`:'';
+  const key=list.map(c=>c.id).join(',')+'|'+(g.phys?Math.round(g.overlap*8):'x');
+  if(key===clipView.key){                       // giữ nguyên video đang phát khi kéo bi trong cùng dải góc
+    const c=clipView.list[clipView.idx], el=$('#cDev'); if(c&&el) el.textContent=Math.abs(c.angle-th).toFixed(1);
+    return;
+  }
+  clipView={key,idx:0,playing:false,list};
+  drawClipBody(g);
+}
+function drawClipBody(g){
+  const b=$('#clipBody'), {list,idx}=clipView;
+  if(!g.phys){b.innerHTML='<div class="empty">Góc cắt > 90° là phi vật lý, nên không có clip mẫu.</div>';return;}
+  if(!list.length){
+    const n=Math.round(g.overlap*8), q=encodeURIComponent('pro pool '+SEARCH_Q[n]+' slow motion');
+    b.innerHTML=`<div class="empty">Chưa có clip cho dải góc <b>${(g.theta/DEG).toFixed(0)}° ± ${CLIP_RANGE}°</b> (${fracLabel(g.overlap)} bi).<br>
+      <a href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">🔎 Tìm cú ${esc(fracLabel(g.overlap))} bi trên YouTube</a>, rồi dựng lại thế bi trên bàn và bấm <b>+ Thêm clip</b> bên dưới.</div>`;
+    return;
+  }
+  const c=list[idx];
+  b.innerHTML=`
+    <div class="vid" id="clipVid">${clipView.playing?`<iframe src="${embedSrc(c)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`:
+      `<img src="https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg" alt=""><div class="play"><span>▶</span></div><div class="tag">${fmtTime(c.start)||'0:00'}${c.end!=null?' – '+fmtTime(c.end):''}</div>`}</div>
+    <div class="clipMeta"><b>${esc(c.player)||'Cơ thủ'}</b>${c.note?` <span class="mut">· ${esc(c.note)}</span>`:''}</div>
+    <div style="margin-bottom:8px"><span class="badge">θ trong clip ${c.angle.toFixed(1)}°</span><span class="mut" style="font-size:12px">lệch <span id="cDev">${Math.abs(c.angle-g.theta/DEG).toFixed(1)}</span>° so với thế bi hiện tại${c.seed?'':' · clip của bạn'}</span></div>
+    <div class="clipNav">
+      <button class="chip" id="cPrev" ${list.length<2?'disabled':''}>◀</button><span class="mut" style="font-size:12px">${idx+1}/${list.length}</span><button class="chip" id="cNext" ${list.length<2?'disabled':''}>▶</button>
+      ${c.layout?'<button class="chip" id="cLayout" title="Đặt bi giống thế bi trong clip">📐 Dựng thế bi</button>':''}
+      <button class="chip" id="cBig" title="Xem lớn">⤢</button>
+      <a class="chip" href="${watchUrl(c)}" target="_blank" rel="noopener" style="text-decoration:none">YouTube ↗</a>
+      ${c.seed?'':'<button class="chip" id="cDel" title="Xoá clip này">🗑</button>'}
+    </div>`;
+  $('#clipVid').onclick=()=>{if(!clipView.playing){clipView.playing=true;drawClipBody(geom());}};
+  const go=d=>{clipView.idx=(idx+d+list.length)%list.length;clipView.playing=false;drawClipBody(geom());};
+  if($('#cPrev'))$('#cPrev').onclick=()=>go(-1);
+  if($('#cNext'))$('#cNext').onclick=()=>go(1);
+  $('#cBig').onclick=()=>{clipView.playing=false;drawClipBody(geom());$('#vmTitle').textContent=`${c.player||'Cơ thủ'} · θ ${c.angle.toFixed(1)}°`;
+    $('#vmFrame').innerHTML=`<iframe src="${embedSrc(c)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`;$('#vidModal').classList.add('open');};
+  if($('#cLayout'))$('#cLayout').onclick=()=>{const L=c.layout;const sizeChanged=L.size&&L.size!==state.size;if(L.size)state.size=L.size;
+    state.cb={...L.cb};state.ob={...L.ob};state.pocket=L.pocket;if(sizeChanged)rebuildTable();else update();};
+  if($('#cDel'))$('#cDel').onclick=()=>{saveUserClips(loadUserClips().filter(x=>x.id!==c.id));clipView.key='';update();};
+}
+const closeVid=()=>{$('#vidModal').classList.remove('open');$('#vmFrame').innerHTML='';};
+$('#vmClose').onclick=closeVid; $('#vidModal').onclick=e=>{if(e.target.id==='vidModal')closeVid();};
+$('#caSave').onclick=()=>{
+  const g=geom(), msg=$('#caMsg'), url=$('#caUrl').value, yt=ytId(url);
+  const start=parseTime($('#caStart').value)??ytUrlTime(url), end=parseTime($('#caEnd').value);
+  const err=t=>{msg.innerHTML=`<span class="bad">${t}</span>`;};
+  if(!yt)return err('Link YouTube không hợp lệ.');
+  if(Number.isNaN(start)||Number.isNaN(end))return err('Thời gian phải dạng mm:ss hoặc số giây.');
+  if(start!=null&&end!=null&&end<=start)return err('Thời điểm kết thúc phải sau thời điểm bắt đầu.');
+  if(!g.phys)return err('Thế bi hiện tại là phi vật lý (> 90°). Hãy dựng lại thế bi.');
+  const clip={id:Date.now().toString(36),yt,start:start??0,end:end??null,player:$('#caPlayer').value.trim(),note:$('#caNote').value.trim(),
+    angle:+(g.theta/DEG).toFixed(2),layout:{size:state.size,cb:{...state.cb},ob:{...state.ob},pocket:state.pocket}};
+  saveUserClips([...loadUserClips(),clip]);
+  ['#caUrl','#caStart','#caEnd','#caNote'].forEach(k=>$(k).value='');
+  msg.innerHTML=`<span class="ok">Đã lưu clip cho góc ${clip.angle.toFixed(1)}°.</span>`;
+  clipView.key='';update();
+};
+$('#clipExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(loadUserClips(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pool-clips.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('#clipImport').onclick=()=>$('#clipFile').click();
+$('#clipFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const arr=JSON.parse(await f.text());if(!Array.isArray(arr))throw 0;
+    const ok=arr.filter(c=>c&&ytId(c.yt||'')&&typeof c.angle==='number').map(c=>({...c,id:String(c.id||Date.now().toString(36)+Math.random().toString(36).slice(2,6))}));
+    const cur=loadUserClips(),ids=new Set(cur.map(c=>c.id));saveUserClips([...cur,...ok.filter(c=>!ids.has(c.id))]);
+    $('#caMsg').innerHTML=`<span class="ok">Đã nhập ${ok.length} clip.</span>`;$('#clipAdd').open=true;clipView.key='';update();
+  }catch{$('#caMsg').innerHTML='<span class="bad">File JSON không hợp lệ.</span>';$('#clipAdd').open=true;}
+  e.target.value='';
+};
 
 // ================= Thanh trên =================
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{

@@ -11,6 +11,11 @@ Web luyện ngắm bida lỗ (pool) với mô phỏng 3D, chạy trực tiếp t
 - **Báo lỗi phi vật lý**: báo khi góc cắt > 90°, và cảnh báo khi góc > 85° (quá mỏng, thực tế gần như không thể vào).
 - **3 góc camera**: trên cao, 3D tự do, góc nhìn người chơi. Có thêm khung nhỏ hiện góc nhìn người chơi.
 - **Quiz**: đoán góc cắt hoặc độ chồng lấn. Có thống kê sai số theo dải góc và xu hướng cắt dày / cắt mỏng.
+- **Clip cơ thủ chuyên nghiệp theo góc cắt**: nhúng đoạn YouTube (có thời điểm bắt đầu và kết thúc) cho từng thế bi.
+  - Góc của clip được đo từ thế bi dựng lại trên bàn 3D, nên khớp với cú đánh thật.
+  - App tự hiện các clip có góc lệch không quá ±7.5° so với thế bi đang xem.
+  - Có nút "Dựng thế bi" để đặt lại bi giống trong clip.
+  - Có thể xuất / nhập file JSON để chia sẻ thư viện clip. Muốn đưa clip vào sẵn trong app thì thêm vào mảng `SEED_CLIPS` trong `index.html`.
 
 ## Chạy
 Mở `index.html` bằng trình duyệt (cần internet để tải Three.js từ CDN), hoặc chạy:
