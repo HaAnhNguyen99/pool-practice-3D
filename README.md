@@ -1,0 +1,27 @@
+# Pool Practice 3D
+
+Web luyện ngắm bida lỗ (pool) với mô phỏng 3D, chạy trực tiếp trên trình duyệt (Three.js).
+
+## Tính năng
+- **Bàn 3D**: Rasson Mr Sung Acura (xám / đen), Rasson Victory II, chuẩn WPA, bàn quán, hoặc tuỳ chỉnh kích thước lỗ. Có chế độ bàn "đã qua sử dụng" hoặc "mới tinh", đổi được màu nỉ và kích thước 7/8/9 ft.
+- **Hình học ngắm**: bi ma (ghost ball), điểm tiếp xúc, góc cắt θ, độ chồng lấn (`1 − sin θ`), độ lệch tâm ngắm.
+- **Khung góc cắt**: hình minh hoạ chồng lấn 2 bi theo góc nhìn ngắm, kèm sơ đồ nhìn từ trên.
+- **Sau va chạm**: đường bi cái khi stun (90°) và khi follow (lăn tự nhiên).
+- **Độ khó**: sai số cho phép tính theo độ mở lỗ và khoảng cách.
+- **Báo lỗi phi vật lý**: báo khi góc cắt > 90°, và cảnh báo khi góc > 85° (quá mỏng, thực tế gần như không thể vào).
+- **3 góc camera**: trên cao, 3D tự do, góc nhìn người chơi. Có thêm khung nhỏ hiện góc nhìn người chơi.
+- **Quiz**: đoán góc cắt hoặc độ chồng lấn. Có thống kê sai số theo dải góc và xu hướng cắt dày / cắt mỏng.
+
+## Chạy
+Mở `index.html` bằng trình duyệt (cần internet để tải Three.js từ CDN), hoặc chạy:
+
+```bash
+python -m http.server 8000
+# mở http://localhost:8000
+```
+
+`index-2d.html` là bản mô phỏng 2D ban đầu.
+
+## Ghi chú
+- Số đo miệng lỗ của bàn Acura là ước tính vì chưa có thông số công bố. Bạn có thể chỉnh lại trong menu bàn → Tuỳ chỉnh.
+- Logo trên bàn chỉ là chữ mô phỏng, không phải file logo chính thức.

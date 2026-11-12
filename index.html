@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pool Trainer 3D – Luyện ngắm</title>
+<style>
+:root{
+  --glass:rgba(16,19,26,.80); --glass2:rgba(255,255,255,.05); --bd:rgba(255,255,255,.09);
+  --txt:#eef1f6; --mut:#8e97aa; --acc:#3dd6c4; --acc2:#7cc4ff; --yel:#ffd43b;
+  --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0a0c10;color:var(--txt);
+  font:14px/1.45 "Inter","Segoe UI",system-ui,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;touch-action:none}
+.glass{background:var(--glass);border:1px solid var(--bd);border-radius:16px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+
+/* Top bar */
+#top{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:10px;padding:8px 10px;z-index:5;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-right:6px;white-space:nowrap}
+.brand .dot{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0 18%,var(--yel) 19% 60%,#b88a00 100%)}
+.brand span{color:var(--acc)}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--glass2);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px}
+.seg button{background:transparent;border:0;color:var(--mut);padding:6px 11px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;white-space:nowrap}
+.seg button:hover{color:var(--txt)}
+.seg button.on{background:var(--acc);color:#05201d;font-weight:650}
+.ibtn{background:var(--glass2);border:1px solid var(--bd);color:var(--txt);border-radius:10px;padding:6px 11px;cursor:pointer;font:inherit;font-size:13px;white-space:nowrap}
+.ibtn:hover{border-color:rgba(255,255,255,.25)}
+.ibtn.pri{background:var(--acc);color:#05201d;border-color:transparent;font-weight:650}
+.ibtn:disabled{opacity:.4;cursor:default}
+select.ibtn{appearance:none;padding-right:22px;background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
+select.ibtn option{background:#151922}
+
+/* Right panel */
+#rightCol{position:fixed;top:76px;right:12px;width:340px;max-height:calc(100vh - 160px);overflow:auto;z-index:4;display:flex;flex-direction:column;gap:10px;padding-right:2px}
+#rightCol::-webkit-scrollbar{width:6px}#rightCol::-webkit-scrollbar-thumb{background:#333a48;border-radius:6px}
+.card{padding:14px}
+.cardHead{display:flex;align-items:center;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);margin-bottom:8px}
+.cardHead b{color:var(--txt);letter-spacing:.06em}
+.cutTop{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-bottom:10px}
+.cutBig{font-size:46px;line-height:1;font-weight:800;color:var(--yel);font-variant-numeric:tabular-nums;min-width:120px}
+.cutBig small{display:block;font-size:11px;font-weight:500;color:var(--mut);letter-spacing:.04em;margin-top:4px}
+.cutSide{display:grid;gap:4px;font-size:12.5px}
+.cutSide div{display:flex;justify-content:space-between;gap:8px}
+.cutSide span{color:var(--mut)} .cutSide b{font-variant-numeric:tabular-nums}
+#ovCanvas{width:100%;height:190px;display:block;border-radius:12px;background:#0d1117;border:1px solid var(--bd);margin-bottom:10px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:var(--glass2);border:1px solid var(--bd);border-radius:12px;padding:9px 11px}
+.kpi small{display:block;color:var(--mut);font-size:11.5px;letter-spacing:.02em}
+.kpi b{display:block;font-size:28px;line-height:1.15;font-weight:750;font-variant-numeric:tabular-nums}
+.kpi em{font-style:normal;color:var(--mut);font-size:12px}
+.aimtip{background:rgba(61,214,196,.09);border:1px solid rgba(61,214,196,.25);border-radius:12px;padding:9px 11px;font-size:13px;margin-bottom:10px}
+.aimtip b{color:var(--acc)}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:12px 0 4px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.row:last-child{border-bottom:0}
+.row span{color:#c3c9d6}
+.row b{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.meter{height:7px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;border-radius:6px;transition:width .2s}
+.note{color:var(--mut);font-size:11.5px;margin-top:8px}
+.alert{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.35);color:#fecaca;border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mut{color:var(--mut)}
+
+/* Dock */
+#dock{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);padding:9px 10px;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+#dock .lbl{color:var(--mut);font-size:12px;margin:0 2px}
+.chip{background:var(--glass2);border:1px solid var(--bd);color:var(--txt);border-radius:9px;padding:6px 9px;cursor:pointer;font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums}
+.chip:hover{border-color:var(--acc)}
+.chip.on{background:var(--acc);color:#05201d;border-color:transparent;font-weight:650}
+.vsep{width:1px;height:24px;background:var(--bd);margin:0 2px}
+#guessWrap{display:flex;align-items:center;gap:10px}
+#guess{width:220px;accent-color:var(--acc)}
+#guessVal{font-size:22px;font-weight:750;min-width:58px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* PiP */
+#pip{position:fixed;left:12px;bottom:14px;width:340px;height:200px;border-radius:14px;border:1px solid var(--bd);z-index:3;pointer-events:none;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+#pip .tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);border-radius:7px;padding:3px 8px;font-size:11.5px;color:#dfe6f1}
+#pip .ov{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);border-radius:7px;padding:3px 8px;font-size:12px;color:var(--acc2);font-weight:600}
+
+/* Popovers & modal */
+.pop{position:fixed;top:72px;padding:12px;z-index:8;width:260px;display:none}
+.pop.open{display:block}
+.pop label{display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:13px;cursor:pointer}
+.pop input{accent-color:var(--acc)}
+.preset{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:var(--glass2);border:1px solid var(--bd);color:var(--txt);border-radius:10px;padding:7px 10px;cursor:pointer;font:inherit;font-size:13px}
+.preset small{color:var(--mut);font-size:11.5px}
+.preset.on{border-color:var(--acc);background:rgba(61,214,196,.12)}
+.slrow{display:grid;grid-template-columns:58px 1fr 62px;align-items:center;gap:8px;font-size:13px;padding:3px 0}
+.slrow span{color:#c3c9d6}.slrow b{text-align:right;font-variant-numeric:tabular-nums}
+.slrow input{accent-color:var(--acc);width:100%}
+.swatches{display:flex;gap:8px}
+.swatches button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.swatches button.on{border-color:#fff}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+#modal.open{display:flex}
+#modal .box{width:min(620px,94vw);padding:18px}
+table.ref{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.ref th,table.ref td{text-align:left;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)}
+table.ref th{color:var(--mut);font-weight:500;font-size:12px}
+table.ref tr.cur td{background:rgba(61,214,196,.14)}
+
+
+#toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:6;font-size:12.5px;color:#cdd3df;padding:6px 12px;border-radius:10px;pointer-events:none;text-align:center;max-width:90vw}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);z-index:30;background:#0a0c10}
+.hidden{display:none!important}
+
+@media (max-width: 900px){
+  #rightCol{top:auto;bottom:132px;left:12px;right:12px;width:auto;max-height:40vh}
+  #pip{left:auto;right:12px;top:118px;bottom:auto;width:180px;height:110px}
+  #guess{width:150px}
+  .brand b{display:none}
+}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="loading">Đang tải mô hình 3D…</div>
+<div id="stage"></div>
+
+<div id="top" class="glass">
+  <div class="brand"><div class="dot"></div><b>Pool <span>Trainer</span> 3D</b></div>
+  <div class="seg" id="modeSeg">
+    <button data-v="sandbox" class="on">Mô phỏng</button>
+    <button data-v="quiz">Quiz</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="seg" id="camSeg" title="Góc camera">
+    <button data-v="top">Trên cao</button>
+    <button data-v="angle" class="on">3D</button>
+    <button data-v="player">Người chơi</button>
+  </div>
+  <button class="ibtn" id="tableBtn">🎱 <span id="tableName">Acura Xám · 9ft</span> ▾</button>
+  <button class="ibtn" id="layersBtn">Lớp hiển thị ▾</button>
+  <button class="ibtn" id="refBtn">Bảng quy đổi</button>
+</div>
+
+<div class="pop glass" id="layersPop"></div>
+<div class="pop glass" id="tablePop" style="width:290px">
+  <div class="sec" style="margin-top:0">Loại bàn</div>
+  <div id="presetList" style="display:grid;gap:5px"></div>
+  <div class="sec">Kích thước</div>
+  <div class="seg" id="sizeSeg"><button data-v="9" class="on">9 ft</button><button data-v="8">8 ft</button><button data-v="7">7 ft</button></div>
+  <div class="sec">Độ mở lỗ (miệng lỗ)</div>
+  <div class="slrow"><span>Lỗ góc</span><input type="range" id="cwIn" min="9.5" max="14" step="0.1"><b id="cwVal"></b></div>
+  <div class="slrow"><span>Lỗ giữa</span><input type="range" id="swIn" min="10.5" max="15" step="0.1"><b id="swVal"></b></div>
+  <div class="sec">Tình trạng bàn</div>
+  <div class="seg" id="wornSeg"><button data-v="1" class="on">Đã qua sử dụng</button><button data-v="0">Mới tinh</button></div>
+  <div class="sec">Màu nỉ</div>
+  <div class="swatches" id="clothSw"></div>
+  <div class="note" id="presetNote"></div>
+</div>
+
+<div id="rightCol">
+  <div id="cutCard" class="glass card">
+    <div class="cardHead"><b>Góc cắt</b></div>
+    <div class="cutTop">
+      <div class="cutBig" id="cutDeg">—<small>GÓC CẮT θ</small></div>
+      <div class="cutSide">
+        <div><span>Chồng lấn</span><b id="cutOv" style="color:var(--acc2)">—</b></div>
+        <div><span>Phân số bi</span><b id="cutFr">—</b></div>
+        <div><span>Bi mục tiêu đi</span><b id="cutDir">—</b></div>
+        <div><span>Lệch tâm ngắm</span><b id="cutOff">—</b></div>
+      </div>
+    </div>
+    <canvas id="ovCanvas"></canvas>
+    <div class="aimtip" id="cutTip" style="margin-bottom:0"></div>
+  </div>
+  <div id="quizCard" class="glass card hidden"></div>
+  <div id="panel" class="glass card">
+    <div class="cardHead"><b>Thông số cú đánh</b></div>
+    <div id="info"></div>
+  </div>
+</div>
+
+<div id="pip"><div class="tag">👁 Góc nhìn người chơi</div><div class="ov" id="pipOv"></div></div>
+
+<div id="toast" class="glass hidden"></div>
+
+<div id="dock" class="glass">
+  <div id="dockSandbox" style="display:contents">
+    <span class="lbl">Đặt góc</span>
+    <div id="cutChips" style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center"></div>
+    <div class="vsep"></div>
+    <button class="chip" id="flipBtn">⇄ Đổi phía</button>
+    <button class="chip" id="randBtn">🎲 Ngẫu nhiên</button>
+  </div>
+  <div id="dockQuiz" class="hidden" style="display:contents">
+    <div class="seg" id="qTypeSeg">
+      <button data-v="angle" class="on">Đoán góc</button>
+      <button data-v="overlap">Đoán chồng lấn</button>
+    </div>
+    <div id="guessWrap"><input type="range" id="guess" min="0" max="90" step="1" value="30"><div id="guessVal">30°</div></div>
+    <div id="ovChips" class="hidden" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+    <button class="ibtn pri" id="qSubmit">Kiểm tra</button>
+    <button class="ibtn" id="qNext">Câu mới →</button>
+  </div>
+</div>
+
+<div id="modal"><div class="box glass">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <b>Bảng quy đổi chồng lấn ↔ góc cắt</b><button class="ibtn" id="closeModal">Đóng</button>
+  </div>
+  <div class="note" style="margin:0 0 8px">Công thức: <b>chồng lấn = 1 − sin θ</b>. Độ lệch tâm ngắm = 2R·sin θ. "Bi cái lăn lệch" là góc lệch của bi cái lăn tự nhiên (follow) so với hướng đánh.</div>
+  <table class="ref" id="refTable"></table>
+</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ================= Hằng số & tiện ích (đơn vị: inch) =================
+const R = 1.125, RAIL = 6, CM = 2.54, DEG = Math.PI/180;
+const SIZES = {9:{L:100,W:50}, 8:{L:88,W:44}, 7:{L:78,W:39}};
+const CLOTH = {silver:[0x8a8f95,0x72777d], green:[0x1d8a56,0x15703f], blue:[0x2161b0,0x184d8f], teal:[0x16857f,0x106862], gray:[0x5b636e,0x474e57]};
+const CLOTH_NAMES = {silver:'Xám bạc',green:'Xanh lá',blue:'Xanh dương',teal:'Xanh ngọc',gray:'Xám đậm'};
+// Thông số lỗ (cm). Rasson Victory II theo thông số nhà bán lẻ; Acura chưa có số đo lỗ công bố → ước tính, nên đo lại bàn thực tế.
+// look: style 'acura' = thân bo góc + chân vát xoè + bịt chân kim loại; grain = vân gỗ
+const PRESETS = {
+  acuraGray:{name:'Rasson Mr Sung Acura – Xám', short:'Acura Xám', cw:11.4, sw:12.7, cloth:'silver',
+    look:{style:'acura', rail:0xc9c6c0, apron:0xaeaba5, grain:true, diamond:0x2a2a2c, logo:{main:'MR-SUNG',badge:'RASSON'}}, note:'Lòng bàn 254×127 cm, đệm K55, lỗ nhựa TPR. Số đo lỗ là ước tính'},
+  acuraBlack:{name:'Rasson Mr Sung Acura – Đen', short:'Acura Đen', cw:11.4, sw:12.7, cloth:'silver',
+    look:{style:'acura', rail:0xbfbcb6, apron:0x3a3a3d, grain:true, diamond:0x2a2a2c, logo:{main:'MR-SUNG',badge:'RASSON'}}, note:'Lòng bàn 254×127 cm, đệm K55, lỗ nhựa TPR. Số đo lỗ là ước tính'},
+  rasson:{name:'Rasson Victory II', short:'Victory II', cw:11.0, sw:12.5, cloth:'blue',
+    look:{style:'classic', rail:0x1b1b1d, apron:0x121213, grain:false, diamond:0xf1ead6, logo:{main:'RASSON'}}, note:'Lỗ chặt, chuẩn thi đấu'},
+  wpa:{name:'Chuẩn WPA', short:'WPA', cw:11.6, sw:12.9, cloth:'blue',
+    look:{style:'classic', rail:0x3a2416, apron:0x2c170b, grain:false, diamond:0xf1ead6}, note:'Lỗ góc 4.5–4.625", lỗ giữa 5–5.125"'},
+  club:{name:'Bàn quán (lỗ rộng)', short:'Bàn quán', cw:12.7, sw:14.0, cloth:'green',
+    look:{style:'classic', rail:0x5a3018, apron:0x2c170b, grain:false, diamond:0xf1ead6}, note:'Lỗ rộng, dễ vào hơn'},
+  custom:{name:'Tuỳ chỉnh', short:'Tuỳ chỉnh', cw:11.4, sw:12.7, cloth:'green', look:null, note:'Tự nhập kích thước lỗ'}
+};
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y}), sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const mul=(a,k)=>({x:a.x*k,y:a.y*k}), dot=(a,b)=>a.x*b.x+a.y*b.y, cross=(a,b)=>a.x*b.y-a.y*b.x;
+const len=a=>Math.hypot(a.x,a.y), norm=a=>{const l=len(a)||1;return{x:a.x/l,y:a.y/l}};
+const rot=(v,a)=>({x:v.x*Math.cos(a)-v.y*Math.sin(a),y:v.x*Math.sin(a)+v.y*Math.cos(a)});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rand=(a,b)=>a+Math.random()*(b-a), ang=v=>Math.atan2(v.y,v.x);
+const $=s=>document.querySelector(s);
+
+const state = {
+  size:9, cloth:'silver', preset:'acuraGray', worn:true, look:PRESETS.acuraGray.look, cw:11.4/2.54, sw:12.7/2.54, cb:{x:28,y:32}, ob:{x:74,y:15}, pocket:2,
+  mode:'sandbox', cam:'angle',
+  show:{ghost:true,aim:true,obline:true,arc:true,stun:true,follow:true,margin:true,contact:true,cue:true,pip:true},
+  quiz:{type:'angle',revealed:true,overlapPick:null}, drag:null
+};
+const LAYERS = {ghost:'Bi ma (ghost ball)',aim:'Đường ngắm bi cái',obline:'Đường bi mục tiêu → lỗ',arc:'Cung góc cắt',
+  stun:'Bi cái sau chạm – stun (90°)',follow:'Bi cái sau chạm – follow',margin:'Vùng sai số cho phép',contact:'Điểm tiếp xúc',
+  cue:'Cây cơ',pip:'Khung góc nhìn người chơi'};
+const T = () => SIZES[state.size];
+const CW = () => state.cw, SW = () => state.sw;   // độ mở lỗ góc / lỗ giữa (inch)
+
+function pockets(){
+  const {L,W}=T(), s=Math.SQRT1_2;
+  const P=[{x:0,y:0,into:{x:-s,y:-s},side:false},{x:L/2,y:0,into:{x:0,y:-1},side:true},{x:L,y:0,into:{x:s,y:-s},side:false},
+           {x:0,y:W,into:{x:-s,y:s},side:false},{x:L/2,y:W,into:{x:0,y:1},side:true},{x:L,y:W,into:{x:s,y:s},side:false}];
+  P.forEach(p=>{ p.aim = p.side ? add(p,mul(p.into,0.3)) : sub(p,mul(p.into,1.0));
+                 p.r = p.side?SW()/2:CW()/2+0.08; p.c = p.side ? add(p,mul(p.into,p.r+0.1)) : add(p,mul(p.into,1.1)); });
+  return P;
+}
+const inside=(p,m=0)=>{const {L,W}=T();return p.x>=R+m&&p.x<=L-R-m&&p.y>=R+m&&p.y<=W-R-m};
+
+// ================= Hình học cú đánh =================
+function geom(){
+  const {cb,ob}=state, P=pockets()[state.pocket];
+  const toP=sub(P.aim,ob), Lp=len(toP), u=mul(toP,1/Lp);
+  const gb=sub(ob,mul(u,2*R));
+  const v=sub(gb,cb), D=len(v), vn=mul(v,1/(D||1));
+  const cosT=clamp(dot(vn,u),-1,1), theta=Math.acos(cosT), cr=cross(vn,u);
+  const right={x:-vn.y,y:vn.x}, lateral=dot(sub(gb,ob),right);
+  const phys=theta<90*DEG;   // > 90°: bi cái phải xuyên qua bi mục tiêu mới tới được bi ma → phi vật lý
+  const overlap=phys?Math.max(0,1-Math.sin(theta)):0, offset=2*R*Math.sin(Math.min(theta,Math.PI/2));
+  const cosB=dot(u,P.into), beta=Math.acos(clamp(cosB,-1,1));
+  const h=(P.side?SW():CW())/2*cosB-0.95*R, dphi=h>0?Math.atan(h/Lp):0;
+  let reason=null;
+  if(!phys) reason='Phi vật lý: góc cắt > 90°. Bi cái không thể chạm vào mặt sau của bi mục tiêu (phải đi xuyên qua bi). Hãy chọn lỗ khác hoặc đổi vị trí bi.';
+  else if(theta>=85*DEG) reason='Góc cắt > 85°: chạm quá mỏng, bi mục tiêu gần như không di chuyển. Thực tế không thể đưa vào lỗ.';
+  else if(!inside(gb,-0.01)) reason='Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ma.';
+  else if(h<=0) reason='Góc vào lỗ quá xiên: bi mục tiêu sẽ chạm má lỗ.';
+  const possible=!reason;
+  const dalpha=possible?dphi*2*R*Math.cos(theta)/D:0;
+  let t=sub(vn,mul(u,cosT)); t=len(t)>1e-6?norm(t):{x:-u.y,y:u.x};
+  const s=Math.sin(theta), thetaC=Math.atan2(s*Math.cos(theta),s*s+0.4);
+  const fdir=rot(vn,(Math.sign(cross(vn,t))||1)*thetaC);
+  const da=dalpha/DEG, diff=possible?clamp(100*Math.log(3/Math.max(da,1e-4))/Math.log(3/0.12),0,100):100;
+  return {P,u,gb,D,vn,theta,cr,lateral,overlap,offset,Lp,beta,dphi,dalpha,possible,phys,reason,t,thetaC,fdir,diff};
+}
+const FR=[[8,'Full (1)'],[7,'7/8'],[6,'3/4'],[5,'5/8'],[4,'1/2'],[3,'3/8'],[2,'1/4'],[1,'1/8'],[0,'Rất mỏng']];
+const fracLabel=ov=>FR.find(f=>f[0]===Math.round(ov*8))[1];
+function rayExit(p,d){const {L,W}=T();let t=Infinity;
+  if(d.x>1e-9)t=Math.min(t,(L-R-p.x)/d.x);else if(d.x<-1e-9)t=Math.min(t,(R-p.x)/d.x);
+  if(d.y>1e-9)t=Math.min(t,(W-R-p.y)/d.y);else if(d.y<-1e-9)t=Math.min(t,(R-p.y)/d.y);
+  if(!isFinite(t)||t<0)t=0;return add(p,mul(d,t));}
+
+// ================= Three.js setup =================
+const stage=$('#stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1;
+stage.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0a0c10);
+scene.fog=new THREE.Fog(0x0a0c10,220,520);
+const camera=new THREE.PerspectiveCamera(42,1,0.5,2000);
+const pipCam=new THREE.PerspectiveCamera(36,16/9,0.3,1000);
+
+// Lights
+scene.add(new THREE.HemisphereLight(0xe6ecf5,0x3a3a40,0.65));
+const fill=new THREE.DirectionalLight(0xffffff,0.55); fill.position.set(70,25,110); scene.add(fill);
+const fill2=new THREE.DirectionalLight(0xffffff,0.3); fill2.position.set(-80,20,-90); scene.add(fill2);
+const key=new THREE.DirectionalLight(0xfff3df,1.7);
+key.position.set(8,120,18); key.castShadow=true; key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-75,right:75,top:45,bottom:-45,near:40,far:200}); key.shadow.bias=-0.0004; key.shadow.radius=4;
+scene.add(key);
+const lamps=[-1,0,1].map(i=>{const l=new THREE.PointLight(0xfff1d6,0.28,0,0);l.position.set(i*32,42,0);scene.add(l);return l;});
+
+// Floor
+const floor=new THREE.Mesh(new THREE.CircleGeometry(400,64),new THREE.MeshStandardMaterial({color:0x14161b,roughness:.95}));
+floor.rotation.x=-Math.PI/2; floor.position.y=-30; floor.receiveShadow=true; scene.add(floor);
+
+const tableG=new THREE.Group(); scene.add(tableG);   // tọa độ bàn: (x, cao, y)
+const staticG=new THREE.Group(), ovG=new THREE.Group(); tableG.add(staticG); tableG.add(ovG);
+
+// ---- Materials
+const mClothTop=new THREE.MeshStandardMaterial({roughness:.92,metalness:0});
+const mCushion=new THREE.MeshStandardMaterial({roughness:.88});
+const mWood=new THREE.MeshStandardMaterial({roughness:.5,metalness:.03});      // mặt băng (top rail)
+const mWoodDark=new THREE.MeshStandardMaterial({roughness:.6});                // thân bàn (apron)
+const mLeg=new THREE.MeshStandardMaterial({roughness:.6});                     // chân
+const mFoot=new THREE.MeshStandardMaterial({color:0xc9ccd0,roughness:.28,metalness:.85});
+const mPocket=new THREE.MeshStandardMaterial({color:0x040404,roughness:1,side:THREE.DoubleSide});
+const mLeather=new THREE.MeshStandardMaterial({color:0x141414,roughness:.42,side:THREE.DoubleSide});
+const mPearl=new THREE.MeshStandardMaterial({color:0xf1ead6,roughness:.3,metalness:.2});
+function applyCloth(){
+  const [a,b]=CLOTH[state.cloth];
+  if(mClothTop.map){mClothTop.map.dispose();}
+  mClothTop.map=clothTex(a,state.worn); mClothTop.color.setHex(0xffffff); mClothTop.needsUpdate=true;
+  const cc=new THREE.Color(b); if(state.worn) cc.lerp(new THREE.Color(0x8a8a86),0.12);   // băng hơi bạc màu
+  mCushion.color.copy(cc);
+}
+// Nỉ: sợi nỉ + (nếu bàn cũ) vùng mòn, vệt bi lăn, bụi lơ (phấn), vết bẩn
+function clothTex(hex,worn){
+  const {L,W}=T(), cw=2048, ch=Math.round(2048*(W+4)/(L+4));
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch; const g=c.getContext('2d');
+  g.fillStyle='#'+new THREE.Color(hex).getHexString(); g.fillRect(0,0,cw,ch);
+  let seed=11; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  g.save(); g.scale(cw/(L+4),ch/(W+4)); g.translate(2,2);          // vẽ theo toạ độ bàn (inch)
+  const blob=(x,y,rx,ry,col,a)=>{const m=Math.max(rx,ry);const gr=g.createRadialGradient(x,y,0,x,y,m);gr.addColorStop(0,`rgba(${col},${a})`);gr.addColorStop(1,`rgba(${col},0)`);
+    g.save();g.translate(x,y);g.scale(rx/m,ry/m);g.translate(-x,-y);g.fillStyle=gr;g.beginPath();g.arc(x,y,m,0,Math.PI*2);g.fill();g.restore();};
+  if(worn){
+    blob(L*0.5,W*0.5,L*0.42,W*0.42,'255,255,255',0.035);            // mòn chung giữa bàn
+    blob(L*0.75,W*0.5,9,8,'255,255,255',0.08);                     // khu xếp bi (rack) mòn nhiều
+    blob(L*0.25,W*0.5,7,W*0.42,'255,255,255',0.04);                // khu phá bi / đặt bi cái
+    const PK=[[0,0],[L/2,0],[L,0],[0,W],[L/2,W],[L,W]];
+    for(let i=0;i<14;i++){                                         // vệt bi lăn về các lỗ
+      const P=PK[Math.floor(rnd()*6)], sx=L*(0.3+rnd()*0.5), sy=W*(0.2+rnd()*0.6);
+      g.strokeStyle=`rgba(255,255,255,${0.005+rnd()*0.008})`; g.lineWidth=2.25; g.lineCap='round';
+      g.beginPath(); g.moveTo(sx,sy); g.lineTo(P[0]+(rnd()-.5)*3,P[1]+(rnd()-.5)*3); g.stroke();
+    }
+    PK.forEach(([x,y])=>{                                          // quanh lỗ: mòn + bụi lơ
+      blob(x,y,7,7,'255,255,255',0.05);
+      for(let k=0;k<3;k++) blob(x+(rnd()-.5)*10,y+(rnd()-.5)*10,0.8+rnd()*1.6,0.8+rnd()*1.6,'60,120,220',0.06+rnd()*0.08);
+    });
+    for(let k=0;k<18;k++) blob(rnd()*L,rnd()*W,0.3+rnd()*0.9,0.3+rnd()*0.9,'60,120,220',0.04+rnd()*0.08);   // chấm lơ
+    for(let k=0;k<5;k++)  blob(rnd()*L,rnd()*W,1.5+rnd()*3,1+rnd()*2.5,'0,0,0',0.03+rnd()*0.04);           // vết bẩn
+    for(let k=0;k<4;k++){const x=rnd()*L,y=rnd()*W;g.strokeStyle='rgba(255,255,255,.035)';g.lineWidth=0.12;g.beginPath();g.arc(x,y,R,0,Math.PI*2);g.stroke();} // vết bi in nỉ
+  }
+  g.restore();
+  // sợi nỉ: nhiễu từng điểm ảnh
+  const img=g.getImageData(0,0,cw,ch), d=img.data, amp=worn?9:5;
+  for(let i=0;i<d.length;i+=4){const n=(rnd()-.5)*amp;d[i]+=n;d[i+1]+=n;d[i+2]+=n;}
+  g.putImageData(img,0,0);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  t.repeat.set(1/(L+4),1/(W+4)); t.offset.set(2/(L+4),(W+2)/(W+4));   // UV của ExtrudeGeometry tính theo inch
+  return t;
+}
+// Vân gỗ thủ tục (procedural) – sọc mảnh chạy ngang
+function grainTex(hex,rx,ry,rotate=false,wear=0){
+  const c=document.createElement('canvas');c.width=1024;c.height=256;const g=c.getContext('2d');
+  const base=new THREE.Color(hex); g.fillStyle='#'+base.getHexString(); g.fillRect(0,0,1024,256);
+  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<10;i++){const y=rnd()*256;g.fillStyle=`rgba(${rnd()<.5?'255,255,255':'0,0,0'},0.035)`;g.fillRect(0,y,1024,8+rnd()*30);}
+  for(let i=0;i<700;i++){
+    const y=rnd()*256, light=rnd()<0.55, a=0.02+rnd()*0.06, w=0.3+rnd()*1.1;
+    g.strokeStyle=light?`rgba(255,255,255,${a})`:`rgba(0,0,0,${a*1.2})`; g.lineWidth=w;
+    g.beginPath(); g.moveTo(0,y); for(let x=0;x<=1024;x+=64) g.lineTo(x,y+Math.sin(x*0.004+i)*1.6); g.stroke();
+  }
+  if(wear){                                                   // trầy xước, vết bẩn, bụi lơ
+    for(let i=0;i<160*wear;i++){const x=rnd()*1024,y=rnd()*256,l=6+rnd()*50,a=rnd()*Math.PI;
+      g.strokeStyle=`rgba(${rnd()<.6?'255,255,255':'0,0,0'},${0.06+rnd()*0.12})`;g.lineWidth=0.5+rnd()*0.9;
+      g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l*0.35);g.stroke();}
+    for(let i=0;i<14*wear;i++){const x=rnd()*1024,y=rnd()*256,r=8+rnd()*40;const gr=g.createRadialGradient(x,y,0,x,y,r);
+      gr.addColorStop(0,`rgba(40,30,20,${0.05+rnd()*0.07})`);gr.addColorStop(1,'rgba(40,30,20,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r);}
+    for(let i=0;i<10*wear;i++){const x=rnd()*1024,y=rnd()*256,r=3+rnd()*9;const gr=g.createRadialGradient(x,y,0,x,y,r);
+      gr.addColorStop(0,'rgba(60,110,210,.22)');gr.addColorStop(1,'rgba(60,110,210,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r);}
+  }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); if(rotate){t.center.set(.5,.5);t.rotation=Math.PI/2;} t.anisotropy=8; return t;
+}
+function setWood(m,hex,grain,rx,ry,rotate,wear=0){
+  if(m.map){m.map.dispose();m.map=null;}
+  if(grain||wear){m.map=grainTex(hex,rx,ry,rotate,wear);m.color.setHex(0xffffff);} else m.color.setHex(hex);
+  m.roughness=wear?0.68:0.5;
+  m.needsUpdate=true;
+}
+function applyLook(){
+  const k=state.look;
+  const w=state.worn?1:0;
+  setWood(mWood,k.rail,k.grain,1/60,1/15,false,w);      // ExtrudeGeometry dùng UV theo inch
+  setWood(mWoodDark,k.apron,k.grain,1/60,1/6,false,w*0.7);
+  setWood(mLeg,k.apron,k.grain,1,0.5,true,w*1.4);
+  mPearl.color.setHex(k.diamond); mPearl.roughness=w?0.7:0.3;
+  // bi cũ: ngả màu, bớt bóng
+  cbMesh.material.color.setHex(w?0xf1ecdc:0xfbfaf4); cbMesh.material.clearcoatRoughness=w?0.25:0.05; cbMesh.material.roughness=w?0.22:0.12;
+  obMesh.material.clearcoatRoughness=w?0.25:0.05;
+}
+
+// ---- Bàn
+function shapeFrom(pts){const s=new THREE.Shape();s.moveTo(pts[0].x,-pts[0].y);for(let i=1;i<pts.length;i++)s.lineTo(pts[i].x,-pts[i].y);s.closePath();return s;}
+function extrude(shape,depth,mat,bevel=0.1){
+  const g=new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:bevel>0,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2,curveSegments:24});
+  g.rotateX(-Math.PI/2); const m=new THREE.Mesh(g,mat); m.castShadow=true; m.receiveShadow=true; return m;
+}
+// Logo dạng chữ (canvas) dán lên thân bàn
+function textTex(text,badge){
+  const c=document.createElement('canvas'); c.width=badge?512:1024; c.height=badge?136:170; const g=c.getContext('2d');
+  const col=state.look.apron>0x777777?'#ffffff':'#e9eaec';
+  g.fillStyle=col; g.strokeStyle=col;
+  if(badge){g.lineWidth=6;g.beginPath();g.roundRect(8,8,c.width-16,c.height-16,14);g.stroke();
+    g.font='700 64px "Segoe UI", Arial'; if('letterSpacing' in g) g.letterSpacing='10px';}
+  else{g.font='800 128px "Segoe UI", Arial'; if('letterSpacing' in g) g.letterSpacing='14px';}
+  g.textAlign='center'; g.textBaseline='middle'; g.shadowColor='rgba(0,0,0,.35)'; g.shadowBlur=6;
+  g.fillText(text,c.width/2,c.height/2+4);
+  if(state.worn){                                            // chữ cũ: bong tróc, trầy, mòn phía dưới, ngả màu
+    let seed=text.length*97+(badge?5:1); const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    g.shadowBlur=0; g.globalCompositeOperation='destination-out';
+    for(let i=0;i<900;i++){g.fillStyle=`rgba(0,0,0,${0.35+rnd()*0.65})`;g.beginPath();g.arc(rnd()*c.width,rnd()*c.height,0.6+rnd()*(rnd()<.08?7:2.4),0,Math.PI*2);g.fill();}
+    for(let i=0;i<55;i++){const x=rnd()*c.width,y=rnd()*c.height,l=20+rnd()*120,a=(rnd()-.5)*0.6;
+      g.strokeStyle=`rgba(0,0,0,${0.5+rnd()*0.5})`;g.lineWidth=0.8+rnd()*2;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();}
+    const gr=g.createLinearGradient(0,c.height*0.45,0,c.height); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.55)');
+    g.fillStyle=gr; g.fillRect(0,0,c.width,c.height);
+    g.globalCompositeOperation='source-atop'; g.fillStyle='rgba(150,140,120,.28)'; g.fillRect(0,0,c.width,c.height);
+    g.globalCompositeOperation='source-over';
+  }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+}
+function addLogo(tex,w,h,x,y,z,ry){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tex,transparent:true,roughness:.3,metalness:.3,emissive:0xffffff,emissiveMap:tex,emissiveIntensity:state.worn?.12:.35,opacity:state.worn?.85:1,depthWrite:false}));
+  m.position.set(x,y,z); m.rotation.y=ry; m.userData.ownMat=true; staticG.add(m);
+}
+// Đường biên khoét lỗ: hình chữ nhật mép sau băng [-2,L+2]×[-2,W+2] hợp (union, cho khung gỗ) hoặc trừ (cho mặt nỉ) các vòng tròn lỗ
+function pocketOutline(union){
+  const {L,W}=T(), P=pockets(), B=2;
+  const E=[{p:{x:-B,y:-B},d:{x:1,y:0}},{p:{x:L+B,y:-B},d:{x:0,y:1}},{p:{x:L+B,y:W+B},d:{x:-1,y:0}},{p:{x:-B,y:W+B},d:{x:0,y:-1}}];
+  const hits=(e,c,r)=>{const f=sub(e.p,c),b=dot(f,e.d),q=dot(f,f)-r*r,ds=Math.sqrt(Math.max(0,b*b-q));return[-b-ds,-b+ds];};
+  const at=(e,t)=>add(e.p,mul(e.d,t));
+  const order=[[1,0,0],[2,0,1],[5,1,2],[4,2,2],[3,2,3],[0,3,0]];   // [lỗ, cạnh vào, cạnh ra] theo chiều kim đồng hồ
+  const arcs=order.map(([pi,ie,oe])=>{
+    const p=P[pi], en=at(E[ie],hits(E[ie],p.c,p.r)[0]), ex=at(E[oe],hits(E[oe],p.c,p.r)[1]);
+    let a0=ang(sub(en,p.c)), a1=ang(sub(ex,p.c));
+    if(union){while(a1<=a0)a1+=2*Math.PI;}else{while(a1>=a0)a1-=2*Math.PI;}
+    const pts=[];for(let k=0;k<=32;k++){const a=a0+(a1-a0)*k/32;pts.push({x:p.c.x+Math.cos(a)*p.r,y:p.c.y+Math.sin(a)*p.r});}
+    return {pi,pts,a0,a1};
+  });
+  return {pts:arcs.flatMap(a=>a.pts), arcs};
+}
+function buildTable(){
+  staticG.traverse(o=>{if(o.geometry)o.geometry.dispose(); if(o.userData.ownMat){o.material.map?.dispose();o.material.dispose();}}); staticG.clear();
+  const {L,W}=T(); tableG.position.set(-L/2,0,-W/2);
+  // nỉ
+  const minus=pocketOutline(false), union=pocketOutline(true);
+  const cloth=extrude(shapeFrom(minus.pts),1,mClothTop,0); cloth.position.y=-1; cloth.castShadow=false; staticG.add(cloth);
+  // băng cao su (cushion) có má lỗ vát
+  const cg=CW()/Math.SQRT2, sg=SW()/2, Dp=2;
+  const map={T:(s,d)=>({x:s,y:-d}),B:(s,d)=>({x:s,y:W+d}),Lf:(s,d)=>({x:-d,y:s}),Rt:(s,d)=>({x:L+d,y:s})};
+  const seg=(r,a0,a1,j0,j1)=>{const f=map[r];staticG.add(extrude(shapeFrom([[a0,0],[a1,0],[a1+j1,Dp],[a0-j0,Dp]].map(([s,d])=>f(s,d))),1.35,mCushion,0.08));};
+  ['T','B'].forEach(r=>{seg(r,cg,L/2-sg,2,0.6);seg(r,L/2+sg,L-cg,0.6,2);});
+  ['Lf','Rt'].forEach(r=>seg(r,cg,W-cg,2,2));
+  // khung gỗ
+  const acura=state.look.style==='acura';
+  const rrect=(x0,y0,x1,y1,rr)=>{const s=new THREE.Shape();
+    s.moveTo(x0+rr,-y0);s.lineTo(x1-rr,-y0);s.quadraticCurveTo(x1,-y0,x1,-y0-rr);s.lineTo(x1,-y1+rr);
+    s.quadraticCurveTo(x1,-y1,x1-rr,-y1);s.lineTo(x0+rr,-y1);s.quadraticCurveTo(x0,-y1,x0,-y1+rr);s.lineTo(x0,-y0-rr);s.quadraticCurveTo(x0,-y0,x0+rr,-y0);return s;};
+  const outer=rrect(-RAIL,-RAIL,L+RAIL,W+RAIL,acura?4.5:2.2);
+  const hole=new THREE.Path(); union.pts.forEach((q,i)=>i?hole.lineTo(q.x,-q.y):hole.moveTo(q.x,-q.y)); hole.closePath();
+  outer.holes.push(hole);
+  const wood=extrude(outer,2.0,mWood,0.15); wood.position.y=-0.45; staticG.add(wood);
+  // thân bàn + chân
+  if(acura){
+    // thân bo góc
+    const ap=extrude(rrect(-RAIL+0.4,-RAIL+0.4,L+RAIL-0.4,W+RAIL-0.4,4.2),8,mWoodDark,0.2); ap.position.y=-8.8; staticG.add(ap);
+    // 4 chân vát xoè ra theo chiều dài bàn + bịt chân kim loại
+    const top=-8.8, floorY=-30, foot=2, tilt=16*DEG, hgt=top-(floorY+foot), lenLeg=hgt/Math.cos(tilt), spread=hgt*Math.tan(tilt);
+    [[1,-1],[1,1],[-1,-1],[-1,1]].forEach(([sx,sz])=>{
+      const xTop=sx<0?L-7:7, xBot=xTop-sx*spread, z=sz<0?-RAIL+3.2:W+RAIL-3.2;
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(6,lenLeg,5),mLeg);
+      leg.position.set((xTop+xBot)/2,(top+floorY+foot)/2,z); leg.rotation.z=-sx*tilt; leg.castShadow=true; staticG.add(leg);
+      const ft=new THREE.Mesh(new THREE.BoxGeometry(6.4,foot,5.4),mFoot); ft.position.set(xBot,floorY+foot/2,z); ft.castShadow=true; staticG.add(ft);
+    });
+    // thanh giằng dọc dưới thân
+    [-RAIL+3.2,W+RAIL-3.2].forEach(z=>{const b=new THREE.Mesh(new THREE.BoxGeometry(L-14,2.2,2.6),mLeg);b.position.set(L/2,-12.5,z);b.castShadow=true;staticG.add(b);});
+  }else{
+    const body=new THREE.Mesh(new THREE.BoxGeometry(L+2*RAIL-1,7,W+2*RAIL-1),mWoodDark); body.position.set(L/2,-4.2,W/2); body.castShadow=true; staticG.add(body);
+    [[0.08,0.1],[0.92,0.1],[0.08,0.9],[0.92,0.9],[0.5,0.1],[0.5,0.9]].forEach(([a,b])=>{
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(5,23,5),mLeg); leg.position.set(L*a,-19,W*b); leg.castShadow=true; staticG.add(leg);});
+  }
+  // logo trên thân bàn
+  if(state.look.logo){
+    const off=acura?RAIL-0.12:RAIL-0.45, yc=acura?-4.8:-4.2, lg=state.look.logo;
+    const sides=[[L/2,W+off,0,L],[L/2,-off,Math.PI,L],[L+off,W/2,Math.PI/2,W],[-off,W/2,-Math.PI/2,W]];
+    sides.forEach(([x,y,ry,span],k)=>{
+      addLogo(textTex(lg.main,false), span>60?22:18, (span>60?22:18)/6, x,yc,y,ry);
+      if(lg.badge&&k<2){const dx=(span/2-14)*(k===0?1:-1); addLogo(textTex(lg.badge,true),8,8/3.8,x+dx,yc,y,ry);}
+    });
+  }
+  // lỗ
+  union.arcs.forEach(({pi,a0,a1})=>{
+    const p=pockets()[pi], span=a1-a0;
+    // giếng lỗ (đen) dưới mặt nỉ
+    const well=new THREE.Mesh(new THREE.CylinderGeometry(p.r-0.02,p.r-0.02,0.5,48,1,true),mPocket); well.position.set(p.c.x,-0.22,p.c.y); staticG.add(well);
+    const bottom=new THREE.Mesh(new THREE.CircleGeometry(p.r,40),mPocket); bottom.rotation.x=-Math.PI/2; bottom.position.set(p.c.x,-0.45,p.c.y); staticG.add(bottom);
+    // lót lỗ nhựa TPR phủ vách gỗ phía ngoài
+    const liner=new THREE.Mesh(new THREE.CylinderGeometry(p.r-0.01,p.r-0.01,2.3,48,1,true,Math.PI/2-a1,span),mLeather); liner.position.set(p.c.x,0.55,p.c.y); staticG.add(liner);
+    // viền miệng lỗ trên mặt băng
+    const rim=new THREE.Mesh(new THREE.RingGeometry(p.r-0.02,p.r+0.55,48,1,-a1,span),mLeather); rim.rotation.x=-Math.PI/2; rim.position.set(p.c.x,1.72,p.c.y); staticG.add(rim);
+  });
+  pockets().forEach((p,i)=>{
+    const pick=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.2,3,16),new THREE.MeshBasicMaterial({visible:false})); pick.position.set(p.c.x,1,p.c.y); pick.userData.pocket=i; staticG.add(pick); pocketPicks[i]=pick;
+  });
+  // diamonds
+  const dg=new THREE.ShapeGeometry(shapeFrom([{x:0,y:-0.55},{x:0.32,y:0},{x:0,y:0.55},{x:-0.32,y:0}])); dg.rotateX(-Math.PI/2);
+  const dia=(x,y,rotY)=>{const m=new THREE.Mesh(dg,mPearl);m.position.set(x,1.72,y);m.rotation.y=rotY;staticG.add(m);};
+  for(let i=1;i<8;i++){if(i===4)continue;dia(L*i/8,-4,Math.PI/2);dia(L*i/8,W+4,Math.PI/2);}
+  for(let i=1;i<4;i++){dia(-4,W*i/4,0);dia(L+4,W*i/4,0);}
+  // foot spot & head string
+  const spot=new THREE.Mesh(new THREE.CircleGeometry(0.35,20),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.35}));
+  spot.rotation.x=-Math.PI/2; spot.position.set(L*3/4,0.02,W/2); staticG.add(spot);
+  // vòng chọn lỗ
+  staticG.add(pocketRing);
+  lamps.forEach((l,i)=>l.position.set((i-1)*L/3,42,0));
+}
+const pocketPicks=[];
+const pocketRing=new THREE.Mesh(new THREE.TorusGeometry(1,0.18,10,48),new THREE.MeshBasicMaterial({color:0x3dd6c4,toneMapped:false}));
+pocketRing.rotation.x=Math.PI/2;
+
+// ---- Bi
+function numberTexture(){
+  const c=document.createElement('canvas');c.width=1024;c.height=512;const g=c.getContext('2d');
+  g.fillStyle='#f5b400';g.fillRect(0,0,1024,512);
+  [256,768].forEach(x=>{g.fillStyle='#fffaf0';g.beginPath();g.arc(x,256,72,0,Math.PI*2);g.fill();
+    g.fillStyle='#111';g.font='bold 100px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('1',x,262);});
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+}
+const ballGeo=new THREE.SphereGeometry(R,64,40);
+const cbMesh=new THREE.Mesh(ballGeo,new THREE.MeshPhysicalMaterial({color:0xfbfaf4,roughness:.12,clearcoat:1,clearcoatRoughness:.05}));
+const obMesh=new THREE.Mesh(ballGeo,new THREE.MeshPhysicalMaterial({map:numberTexture(),roughness:.15,clearcoat:1,clearcoatRoughness:.05}));
+obMesh.rotation.set(-Math.PI/2,0,0.6);
+[cbMesh,obMesh].forEach(m=>{m.castShadow=true;tableG.add(m);});
+const pickGeo=new THREE.SphereGeometry(R*2.3,12,8), pickMat=new THREE.MeshBasicMaterial({visible:false});
+const cbPick=new THREE.Mesh(pickGeo,pickMat), obPick=new THREE.Mesh(pickGeo,pickMat);
+cbPick.userData.ball='cb'; obPick.userData.ball='ob'; tableG.add(cbPick,obPick);
+
+// ---- Cây cơ
+const cue=new THREE.Group();
+(function(){
+  const part=(rt,rb,h,y,mat)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,28),mat);m.position.y=y;m.castShadow=true;cue.add(m);};
+  part(0.25,0.25,0.25,-0.125,new THREE.MeshStandardMaterial({color:0x2f6fd8,roughness:.8}));
+  part(0.255,0.26,0.9,-0.7,new THREE.MeshStandardMaterial({color:0xf3f0e6,roughness:.3}));
+  part(0.26,0.42,28,-15.15,new THREE.MeshStandardMaterial({color:0xe6cf9f,roughness:.35}));
+  part(0.42,0.44,1.2,-29.75,new THREE.MeshStandardMaterial({color:0xd9d4c8,roughness:.3,metalness:.4}));
+  part(0.44,0.52,14,-37.4,new THREE.MeshStandardMaterial({color:0x3a1d0e,roughness:.35}));
+  part(0.52,0.58,12,-50.4,new THREE.MeshStandardMaterial({color:0x111111,roughness:.7}));
+  part(0.58,0.6,0.8,-56.8,new THREE.MeshStandardMaterial({color:0x222222,roughness:.5}));
+})();
+tableG.add(cue);
+
+// ---- Overlay helpers
+const unitBox=new THREE.BoxGeometry(1,0.02,1); const matCache={}; let disposables=[];
+const mat=(c,o=1)=>{const k=c+'_'+o;return matCache[k]||(matCache[k]=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,depthWrite:false,toneMapped:false}));};
+function ribbon(a,b,w,color,opacity=1,dash=null,h=0.04){
+  const d=sub(b,a),l=len(d); if(l<0.05)return; const an=ang(d), m=mat(color,opacity);
+  const piece=(s,e)=>{const r=new THREE.Mesh(unitBox,m);r.scale.set(e-s,1,w);const mid=(s+e)/2;
+    r.position.set(a.x+Math.cos(an)*mid,h,a.y+Math.sin(an)*mid);r.rotation.y=-an;r.renderOrder=2;ovG.add(r);};
+  if(!dash)piece(0,l);else for(let s=0;s<l;s+=dash[0]+dash[1])piece(s,Math.min(l,s+dash[0]));
+}
+function wedge(p,a,half,length,color,opacity){
+  const vis=Math.max(half,0.12*DEG), g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute([p.x,0.03,p.y, p.x+Math.cos(a+vis)*length,0.03,p.y+Math.sin(a+vis)*length, p.x+Math.cos(a-vis)*length,0.03,p.y+Math.sin(a-vis)*length],3));
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color,transparent:true,opacity,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+  disposables.push(g,m.material); ovG.add(m);
+}
+
+// ================= Cập nhật cảnh =================
+const hidden=()=>state.mode==='quiz'&&!state.quiz.revealed;
+function update(){
+  const g=geom(), S=state.show, hide=hidden();
+  cbMesh.position.set(state.cb.x,R,state.cb.y); obMesh.position.set(state.ob.x,R,state.ob.y);
+  cbPick.position.copy(cbMesh.position); obPick.position.copy(obMesh.position);
+  const P=g.P; pocketRing.position.set(P.c.x,1.75,P.c.y); pocketRing.scale.setScalar(P.r+0.35);
+
+  ovG.clear(); disposables.forEach(d=>d.dispose()); disposables=[];
+  if(!hide){
+    if(S.margin&&g.possible){ wedge(state.ob,ang(g.u),g.dphi,g.Lp,0x4ade80,.25); wedge(state.cb,ang(g.vn),g.dalpha,g.D,0x4ade80,.35); }
+    if(S.obline) ribbon(state.ob,P.aim,0.14,0xffd43b,.95,[1.6,0.9]);
+    if(!g.phys){ // minh hoạ: muốn tới bi ma phải xuyên qua bi mục tiêu
+      ribbon(state.cb,g.gb,0.14,0xf87171,.95,[1.0,0.7]);
+      const gx=new THREE.Mesh(ballGeo,new THREE.MeshBasicMaterial({color:0xf87171,transparent:true,opacity:.22,depthWrite:false})); gx.position.set(g.gb.x,R,g.gb.y); disposables.push(gx.material); ovG.add(gx);
+    }
+    else if(S.aim) ribbon(state.cb,g.gb,0.14,g.possible?0xffffff:0xf87171,.95);
+    if(S.stun&&g.possible) ribbon(g.gb,rayExit(g.gb,g.t),0.12,0x7cc4ff,.95,[1.2,0.9]);
+    if(S.follow&&g.possible) ribbon(g.gb,rayExit(g.gb,g.fdir),0.12,0xf472b6,.95,[0.6,0.8]);
+    if(S.arc&&g.phys&&g.theta>0.5*DEG){
+      ribbon(g.gb,add(g.gb,mul(g.vn,9)),0.07,0xffffff,.45,[0.6,0.6]);
+      const a1=ang(g.vn), delta=Math.atan2(g.cr,dot(g.vn,g.u)); let s=-a1, l=-delta; if(l<0){s+=l;l=-l;}
+      const rg=new THREE.RingGeometry(5.7,6.05,48,1,s,l); const rm=new THREE.Mesh(rg,mat(0xffd43b,1));
+      rm.rotation.x=-Math.PI/2; rm.position.set(g.gb.x,0.05,g.gb.y); disposables.push(rg); ovG.add(rm);
+    }
+    if(S.ghost&&g.phys){
+      const gm=new THREE.Mesh(ballGeo,new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.28,depthWrite:false}));
+      gm.position.set(g.gb.x,R,g.gb.y); disposables.push(gm.material); ovG.add(gm);
+      const ring=new THREE.Mesh(new THREE.RingGeometry(R-0.07,R+0.05,48),mat(0xffffff,.85)); ring.rotation.x=-Math.PI/2; ring.position.set(g.gb.x,0.04,g.gb.y); disposables.push(ring.geometry); ovG.add(ring);
+    }
+    if(S.contact&&g.phys){const cp=sub(state.ob,mul(g.u,R)); const dm=new THREE.Mesh(new THREE.SphereGeometry(0.2,16,12),mat(0xff3b3b,1)); dm.position.set(cp.x,R,cp.y); disposables.push(dm.geometry); ovG.add(dm);}
+  }
+  // cây cơ
+  const showCue=S.cue&&!hide; cue.visible=showCue;
+  if(showCue){
+    const cd=g.phys?g.vn:norm(sub(state.ob,state.cb));
+    const e=6*DEG, tip=sub(state.cb,mul(cd,R+1.0));
+    cue.position.set(tip.x,R+0.08,tip.y);
+    const dir=new THREE.Vector3(cd.x*Math.cos(e),-Math.sin(e),cd.y*Math.cos(e)).normalize();
+    cue.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+  }
+  updatePanel(g,hide); updateToast(g,hide);
+  $('#pip').classList.toggle('hidden',!S.pip||state.cam==='player');
+  $('#pipOv').textContent = hide ? '' : !g.phys ? 'Phi vật lý · góc > 90°' : `Chồng lấn ${fracLabel(g.overlap)} · ${(g.overlap*100).toFixed(0)}%`;
+}
+
+// ================= Panel thông số =================
+function diffInfo(d){return d<30?['Dễ','var(--ok)']:d<55?['Trung bình','#a3e635']:d<75?['Khó','var(--warn)']:['Rất khó','var(--bad)'];}
+function aimText(g){
+  const o=Math.abs(g.lateral)/R, side=g.lateral>0?'phải':'trái';
+  if(o<0.05) return 'Bi thẳng: ngắm <b>thẳng vào tâm</b> bi mục tiêu.';
+  if(Math.abs(o-1)<0.05) return `Ngắm tâm bi cái vào <b>đúng mép ${side}</b> bi mục tiêu (half-ball).`;
+  if(o<1) return `Ngắm tâm bi cái vào điểm cách tâm bi mục tiêu <b>${o.toFixed(2)}R về bên ${side}</b>, vẫn nằm trong bi.`;
+  return `Ngắm tâm bi cái <b>ra ngoài mép ${side}</b> bi mục tiêu thêm ${(o-1).toFixed(2)}R.`;
+}
+function updatePanel(g,hide){
+  const q=hide?'—':null, th=g.theta/DEG, [dl,dc]=diffInfo(g.diff);
+  const dir=g.lateral>0.001?'Trái':g.lateral<-0.001?'Phải':'Thẳng';
+  $('#info').innerHTML=`
+    ${!hide&&!g.possible?`<div class="alert">⚠ ${g.reason}</div>`:''}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span class="mut">Độ khó</span><b style="color:${hide?'var(--mut)':dc}">${q??(g.possible?dl+' · '+g.diff.toFixed(0):'Không thể')}</b></div>
+      <div class="meter"><i style="width:${hide?0:g.diff}%;background:${dc}"></i></div>
+    </div>
+    <div class="sec">Khoảng cách</div>
+    <div class="row"><span>Bi cái → bi ma</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Bi mục tiêu → lỗ</span><b>${(g.Lp*CM).toFixed(0)} cm</b></div>
+    <div class="sec">Lỗ &amp; sai số</div>
+    <div class="row"><span>Góc vào lỗ</span><b>${q??(g.beta/DEG).toFixed(0)+'°'}</b></div>
+    <div class="row"><span>Sai số cho phép ở bi mục tiêu</span><b>${q??(g.possible?'±'+(g.dphi/DEG).toFixed(2)+'°':'—')}</b></div>
+    <div class="row"><span>Sai số cho phép khi ngắm</span><b>${q??(g.possible?'±'+(g.dalpha/DEG).toFixed(2)+'°':'—')}</b></div>
+    <div class="sec">Bi cái sau va chạm</div>
+    <div class="row"><span>Stun (bi trượt)</span><b>${q??(g.phys?'90° với bi mục tiêu':'—')}</b></div>
+    <div class="row"><span>Follow (lăn tự nhiên)</span><b>${q??(g.phys?'lệch '+(g.thetaC/DEG).toFixed(1)+'° so với hướng đánh':'—')}</b></div>
+    <div class="note">Sai số cho phép được ước tính theo độ mở lỗ (${PRESETS[state.preset].name}: lỗ góc ${(CW()*CM).toFixed(1)} cm, lỗ giữa ${(SW()*CM).toFixed(1)} cm), chưa tính throw và xoáy.</div>`;
+  // --- Khung góc cắt
+  const bad=!hide&&!g.phys;
+  $('#cutDeg').style.color=bad?'var(--bad)':'';
+  $('#cutDeg').innerHTML=(hide?'?':th.toFixed(1)+'°')+(bad?'<small style="color:var(--bad)">PHI VẬT LÝ</small>':'<small>GÓC CẮT θ</small>');
+  $('#cutOv').textContent=q??(bad?'0%':(g.overlap*100).toFixed(0)+'%');
+  $('#cutFr').textContent=q??(bad?'Không chạm được':fracLabel(g.overlap)+' bi');
+  $('#cutDir').textContent=q??(bad?'—':dir);
+  $('#cutOff').textContent=q??(bad?'—':(g.offset/R).toFixed(2)+'R ('+(g.offset*25.4).toFixed(0)+'mm)');
+  $('#cutTip').innerHTML=hide?'Đoán góc cắt bằng thanh trượt bên dưới, rồi bấm <b>Kiểm tra</b>.':bad?'⛔ Góc cắt tối đa về lý thuyết là <b>90°</b> (chạm mỏng nhất). Trên 90° bi cái không thể chạm vào đúng điểm để đẩy bi mục tiêu về lỗ. Thực tế, góc trên khoảng 80–85° đã gần như không thể đánh vào.':'🎯 '+aimText(g);
+  drawCut(g,hide);
+  const n=hide?-1:Math.round(g.overlap*8);
+  document.querySelectorAll('#refTable tr[data-n]').forEach(tr=>tr.classList.toggle('cur',+tr.dataset.n===n));
+}
+const ovc=document.getElementById('ovCanvas'), oc=ovc.getContext('2d');
+function drawCut(g,hide){
+  const dpr=Math.min(devicePixelRatio,2), Wc=ovc.clientWidth, Hc=ovc.clientHeight;
+  if(!Wc) return;
+  if(ovc.width!==Math.round(Wc*dpr)){ovc.width=Math.round(Wc*dpr);ovc.height=Math.round(Hc*dpr);}
+  oc.setTransform(dpr,0,0,dpr,0,0); oc.clearRect(0,0,Wc,Hc);
+  const split=Wc*0.5;
+  oc.strokeStyle='rgba(255,255,255,.08)'; oc.beginPath(); oc.moveTo(split,10); oc.lineTo(split,Hc-10); oc.stroke();
+  oc.font='600 10.5px Segoe UI, system-ui'; oc.fillStyle='#8e97aa'; oc.textAlign='left';
+  oc.fillText('GÓC NHÌN NGẮM',10,16); oc.fillText('NHÌN TỪ TRÊN',split+10,16);
+  if(hide){oc.fillStyle='#cfd6e2';oc.font='700 26px Segoe UI';oc.textAlign='center';oc.fillText('?',split/2,Hc/2+8);oc.fillText('?',split+split/2,Hc/2+8);return;}
+  if(!g.phys){oc.textAlign='center';oc.fillStyle='#f87171';oc.font='800 30px Segoe UI';oc.fillText('⛔',split/2,Hc/2-6);
+    oc.font='700 12px Segoe UI';oc.fillText('Không có điểm chạm',split/2,Hc/2+20);oc.fillStyle='#8e97aa';oc.font='600 11px Segoe UI';oc.fillText('góc > 90° · phi vật lý',split/2,Hc/2+36);}
+  const ball=(x,y,r,c1,c2,c3)=>{const gr=oc.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);gr.addColorStop(0,c1);gr.addColorStop(.3,c2);gr.addColorStop(1,c3);oc.beginPath();oc.arc(x,y,r,0,Math.PI*2);oc.fillStyle=gr;oc.fill();};
+  // ---- Trái: chồng lấn như khi cúi ngắm
+  if(g.phys){
+  const rp=Math.min(split/4.3,Hc/3.4), cx=split/2, cy=Hc*0.52, off=clamp(g.lateral/R,-2.05,2.05)*rp;
+  ball(cx,cy,rp,'#fff','#f5b400','#8a6a00');
+  oc.save(); oc.beginPath(); oc.arc(cx,cy,rp,0,Math.PI*2); oc.clip();
+  oc.beginPath(); oc.arc(cx+off,cy,rp,0,Math.PI*2); oc.fillStyle='rgba(124,196,255,.6)'; oc.fill(); oc.restore();
+  oc.beginPath(); oc.arc(cx+off,cy,rp,0,Math.PI*2); oc.fillStyle='rgba(255,255,255,.12)'; oc.fill();
+  oc.setLineDash([4,3]); oc.strokeStyle='#fff'; oc.lineWidth=1.4; oc.stroke(); oc.setLineDash([]);
+  oc.strokeStyle='#ffd43b'; oc.lineWidth=1.6; oc.beginPath(); oc.moveTo(cx+off,cy-rp-12); oc.lineTo(cx+off,cy+rp+6); oc.stroke();
+  oc.strokeStyle='rgba(0,0,0,.5)'; oc.lineWidth=1; oc.beginPath(); oc.moveTo(cx,cy-rp-4); oc.lineTo(cx,cy+rp+4); oc.stroke();
+  oc.fillStyle='#7cc4ff'; oc.font='700 12px Segoe UI'; oc.textAlign='center';
+  oc.fillText(`${(g.overlap*100).toFixed(0)}% · ${fracLabel(g.overlap)}`,cx,Hc-10);
+  }
+  // ---- Phải: sơ đồ góc cắt nhìn từ trên (xoay để hướng vào lỗ luôn hướng lên)
+  const phi=-Math.PI/2-ang(g.u), vl=rot(g.vn,phi), ul={x:0,y:-1};
+  const rr=13, ox=split+split/2, oy=Hc*0.34, gbx=ox, gby=oy+2*rr;
+  let L2=Math.min(64,(Hc-gby-14)/Math.max(.2,Math.abs(vl.y))); L2=Math.max(30,L2);
+  let cbx=gbx-vl.x*L2, cby=gby-vl.y*L2;
+  const lim=split/2-14; if(Math.abs(cbx-ox)>lim){const k=lim/Math.abs(cbx-ox);cbx=gbx-vl.x*L2*k;cby=gby-vl.y*L2*k;}
+  oc.setLineDash([4,3]); oc.strokeStyle='#ffd43b'; oc.lineWidth=1.5; oc.beginPath(); oc.moveTo(ox,oy); oc.lineTo(ox,22); oc.stroke();
+  oc.beginPath(); oc.moveTo(ox-4,28); oc.lineTo(ox,21); oc.lineTo(ox+4,28); oc.stroke();
+  oc.strokeStyle='rgba(255,255,255,.35)'; oc.beginPath(); oc.moveTo(gbx,gby); oc.lineTo(gbx+vl.x*34,gby+vl.y*34); oc.stroke(); oc.setLineDash([]);
+  oc.strokeStyle=g.phys?'#fff':'#f87171'; oc.lineWidth=1.6; if(!g.phys)oc.setLineDash([4,3]); oc.beginPath(); oc.moveTo(cbx,cby); oc.lineTo(gbx,gby); oc.stroke(); oc.setLineDash([]);
+  if(g.theta>0.5*DEG){const a1=ang(vl),a2=ang(ul);oc.strokeStyle='#ffd43b';oc.lineWidth=2;oc.beginPath();oc.arc(gbx,gby,24,a1,a2,cross(vl,ul)<0);oc.stroke();
+    const sd=vl.x>0?-1:1;oc.fillStyle=g.phys?'#ffd43b':'#f87171';oc.font='700 12.5px Segoe UI';oc.textAlign=sd<0?'right':'left';oc.fillText((g.theta/DEG).toFixed(1)+'°',gbx+sd*30,gby-6);}
+  oc.beginPath(); oc.arc(gbx,gby,rr,0,Math.PI*2); oc.setLineDash([3,3]); oc.strokeStyle='rgba(255,255,255,.85)'; oc.lineWidth=1.2; oc.stroke(); oc.setLineDash([]);
+  ball(ox,oy,rr,'#fff','#f5b400','#8a6a00');
+  ball(cbx,cby,rr*0.9,'#fff','#f4f4ef','#a9a9a2');
+  oc.fillStyle='#8e97aa'; oc.font='600 10px Segoe UI'; oc.textAlign='left'; oc.fillText('→ lỗ',ox+6,30);
+}
+function updateToast(g,hide){
+  const t=$('#toast'); let msg='';
+  if(state.mode==='quiz'&&hide) msg='Ước lượng góc cắt để đưa bi vàng vào lỗ có vòng sáng. Khung góc nhìn người chơi cho bạn thấy đúng như trên bàn thật.';
+  else if(state.mode==='sandbox'&&!state._hinted) msg='Kéo bi trắng hoặc bi vàng để di chuyển · Bấm vào lỗ để chọn lỗ đích · Kéo nền để xoay camera, cuộn để zoom';
+  t.textContent=msg; t.classList.toggle('hidden',!msg);
+}
+
+// ================= Camera =================
+let tween=null;
+function presetPose(mode){
+  const {L,W}=T(), a=camera.aspect, f=Math.tan(camera.fov*DEG/2);
+  if(mode==='top'){const d=Math.max((W+2*RAIL+14)/2/f,(L+2*RAIL+14)/2/(f*a)); return {pos:new THREE.Vector3(0,d,0.01),tgt:new THREE.Vector3(0,0,0)};}
+  const d=Math.max(95,(L+2*RAIL)/2/(f*a)*0.95); return {pos:new THREE.Vector3(0,d*0.72,d*0.78),tgt:new THREE.Vector3(0,-2,0)};
+}
+function playerPose(){
+  const g=geom(), dir=hidden()?norm(sub(state.ob,state.cb)):g.vn;
+  const eye=sub(state.cb,mul(dir,20)), look=hidden()?state.ob:g.gb;
+  return {pos:tableG.localToWorld(new THREE.Vector3(eye.x,R+6.5,eye.y)), tgt:tableG.localToWorld(new THREE.Vector3(look.x,R*0.9,look.y))};
+}
+function setCam(mode,instant=false){
+  state.cam=mode;
+  document.querySelectorAll('#camSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===mode));
+  if(mode==='player'){controls.enabled=false;tween=null;update();return;}
+  controls.enabled=true; const p=presetPose(mode);
+  if(instant){camera.position.copy(p.pos);controls.target.copy(p.tgt);controls.update();}
+  else tween={fp:camera.position.clone(),tp:p.pos,ft:controls.target.clone(),tt:p.tgt,t:0};
+  update();
+}
+
+// ================= Tương tác =================
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-R);
+let down=null;
+function setNdc(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);}
+function planeHit(){const p=new THREE.Vector3();if(!ray.ray.intersectPlane(dragPlane,p))return null;const l=tableG.worldToLocal(p);return{x:l.x,y:l.z};}
+const clampBall=p=>{const {L,W}=T();return{x:clamp(p.x,R,L-R),y:clamp(p.y,R,W-R)}};
+function separate(m,o){const d=sub(m,o),l=len(d);if(l<2*R){const n=l>1e-6?mul(d,1/l):{x:1,y:0};return clampBall(add(o,mul(n,2*R+0.01)));}return m;}
+// Đăng ký trước OrbitControls để chặn xoay camera khi đang kéo bi
+renderer.domElement.addEventListener('pointerdown',e=>{
+  setNdc(e); down={x:e.clientX,y:e.clientY};
+  if(hidden())return;
+  const picks=state.cam==='player'?[obPick]:[cbPick,obPick];
+  const hit=ray.intersectObjects(picks,false)[0];
+  if(hit){state.drag=hit.object.userData.ball;controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);state._hinted=true;}
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(!state.drag){setNdc(e);const h=!hidden()&&ray.intersectObjects([cbPick,obPick,...pocketPicks],false)[0];renderer.domElement.style.cursor=h?'pointer':'grab';return;}
+  setNdc(e);const p=planeHit();if(!p)return;const c=clampBall(p);
+  if(state.drag==='cb')state.cb=separate(c,state.ob);else state.ob=separate(c,state.cb);
+  update();
+});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(state.drag){state.drag=null;controls.enabled=state.cam!=='player';return;}
+  if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6&&!hidden()){
+    setNdc(e);const hit=ray.intersectObjects(pocketPicks,false)[0];
+    if(hit){state.pocket=hit.object.userData.pocket;state._hinted=true;update();}
+  }
+  down=null;
+});
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=0.08;controls.maxPolarAngle=Math.PI*0.47;controls.minDistance=12;controls.maxDistance=320;
+controls.addEventListener('start',()=>{tween=null;});
+
+// ================= Sandbox =================
+function placeCut(deg,sideSign){
+  const g=geom(), D=clamp(g.D,8,60);
+  for(const s of [sideSign,-sideSign]) for(let d=D;d>=3*R;d-=1){
+    const cb=sub(g.gb,mul(rot(g.u,-s*deg*DEG),d));
+    if(inside(cb,0.2)&&len(sub(cb,state.ob))>2*R+0.1){state.cb=cb;update();return;}
+  }
+}
+const curSide=()=>geom().cr>=0?1:-1;
+[0,7.2,14.5,22,30,38.7,48.6,61,75].forEach(a=>{
+  const b=document.createElement('button');b.className='chip';b.textContent=a+'°';
+  b.title='Chồng lấn '+fracLabel(1-Math.sin(a*DEG));b.onclick=()=>placeCut(a,curSide());$('#cutChips').appendChild(b);
+});
+$('#flipBtn').onclick=()=>placeCut(geom().theta/DEG,-curSide());
+$('#randBtn').onclick=()=>{genPosition();update();};
+function genPosition(minA=3,maxA=78){
+  const {L,W}=T();
+  for(let i=0;i<3000;i++){
+    const pi=Math.floor(Math.random()*6),P=pockets()[pi],ob={x:rand(6,L-6),y:rand(5,W-5)};
+    const toP=sub(P.aim,ob),Lp=len(toP);if(Lp<8)continue;const u=mul(toP,1/Lp);
+    if((P.side?SW():CW())/2*dot(u,P.into)-0.95*R<0.35)continue;
+    const th=rand(minA,maxA)*DEG,s=Math.random()<.5?1:-1,D=rand(10,55),gb=sub(ob,mul(u,2*R));
+    const cb=sub(gb,mul(rot(u,-s*th),D));
+    if(!inside(cb,1.5)||!inside(gb,0.3)||pockets().some(q=>len(sub(cb,q))<7))continue;
+    state.ob=ob;state.cb=cb;state.pocket=pi;return true;
+  }
+  return false;
+}
+
+// ================= Quiz =================
+const STORE='pooltrainer.quiz.v1';
+const loadStats=()=>{try{return JSON.parse(localStorage.getItem(STORE))||{items:[]}}catch{return{items:[]}}};
+const saveStats=s=>localStorage.setItem(STORE,JSON.stringify(s));
+$('#guess').oninput=()=>$('#guessVal').textContent=$('#guess').value+'°';
+FR.forEach(([n,lab])=>{const b=document.createElement('button');b.className='chip';b.textContent=lab;b.dataset.n=n;
+  b.onclick=()=>{if(state.quiz.revealed)return;state.quiz.overlapPick=n;document.querySelectorAll('#ovChips .chip').forEach(x=>x.classList.toggle('on',x===b));};
+  $('#ovChips').appendChild(b);});
+let lastResult='';
+function newQuiz(){
+  genPosition(state.quiz.type==='overlap'?0:2,78);
+  state.quiz.revealed=false;state.quiz.overlapPick=null;lastResult='';
+  document.querySelectorAll('#ovChips .chip').forEach(x=>x.classList.remove('on'));
+  $('#qSubmit').disabled=false; renderQuizCard(); update();
+}
+function submitQuiz(){
+  if(state.quiz.revealed)return;
+  const g=geom(),th=g.theta/DEG,st=loadStats();
+  if(state.quiz.type==='angle'){
+    const gs=+$('#guess').value,err=gs-th,score=Math.max(0,Math.round(100-8*Math.abs(err)));
+    st.items.push({t:'a',th,g:gs,e:err,s:score});
+    const c=Math.abs(err)<=3?'ok':Math.abs(err)<=7?'warn':'bad';
+    lastResult=`<div class="kpis"><div class="kpi"><small>Thực tế</small><b>${th.toFixed(1)}°</b></div><div class="kpi"><small>Bạn đoán</small><b class="${c}">${gs}°</b><em>${err>0?'+':''}${err.toFixed(1)}° · ${score} điểm</em></div></div>
+      <div class="aimtip">${Math.abs(err)<=3?'🎯 Rất chuẩn!':err<0?'Bạn đoán <b>nhỏ hơn</b> thực tế, dễ dẫn tới cắt dày (undercut).':'Bạn đoán <b>lớn hơn</b> thực tế, dễ dẫn tới cắt mỏng (overcut).'}</div>`;
+  }else{
+    const pick=state.quiz.overlapPick;if(pick===null){lastResult='<div class="alert">Hãy chọn một mức chồng lấn ở thanh dưới.</div>';renderQuizCard();return;}
+    const ans=Math.round(g.overlap*8),diff=pick-ans,score=diff===0?100:Math.abs(diff)===1?50:0;
+    st.items.push({t:'o',th,g:pick,e:diff,s:score});
+    const c=score===100?'ok':score===50?'warn':'bad';
+    lastResult=`<div class="kpis"><div class="kpi"><small>Đáp án</small><b>${fracLabel(g.overlap)}</b><em>${(g.overlap*100).toFixed(0)}% · θ ${th.toFixed(1)}°</em></div><div class="kpi"><small>Bạn chọn</small><b class="${c}">${FR.find(f=>f[0]===pick)[1]}</b><em>${score} điểm</em></div></div>
+      <div class="aimtip">${diff===0?'🎯 Chính xác!':diff>0?'Bạn chọn <b>dày hơn</b> thực tế, bi sẽ bị cắt dày (undercut).':'Bạn chọn <b>mỏng hơn</b> thực tế, bi sẽ bị cắt mỏng (overcut).'}</div>`;
+  }
+  st.items=st.items.slice(-300);saveStats(st);
+  state.quiz.revealed=true;$('#qSubmit').disabled=true;renderQuizCard();update();
+}
+function renderQuizCard(){
+  const items=loadStats().items,A=items.filter(i=>i.t==='a'),O=items.filter(i=>i.t==='o');
+  const avg=(a,f)=>a.length?a.reduce((s,x)=>s+f(x),0)/a.length:0;
+  let h=lastResult+`<div class="sec" style="margin-top:0">Thống kê quiz</div>`;
+  if(!items.length)h+='<div class="mut" style="font-size:13px">Chưa có dữ liệu.</div>';
+  else{
+    h+=`<div class="row"><span>Số câu · điểm TB</span><b>${items.length} · ${avg(items,i=>i.s).toFixed(0)}</b></div>`;
+    if(A.length){const b=avg(A,i=>i.e);
+      h+=`<div class="row"><span>Sai số TB (đoán góc)</span><b>±${avg(A,i=>Math.abs(i.e)).toFixed(1)}°</b></div>
+          <div class="row"><span>Xu hướng</span><b class="${Math.abs(b)<1.5?'ok':'warn'}">${Math.abs(b)<1.5?'Cân bằng':b<0?'Đoán nhỏ ('+b.toFixed(1)+'°)':'Đoán lớn (+'+b.toFixed(1)+'°)'}</b></div>
+          <table class="ref" style="margin-top:6px"><tr><th>Dải góc</th><th>Số câu</th><th>Sai số TB</th></tr>`;
+      [[0,15],[15,30],[30,45],[45,60],[60,90]].forEach(([a,c])=>{const xs=A.filter(i=>i.th>=a&&i.th<c),e=avg(xs,i=>Math.abs(i.e));
+        h+=`<tr><td>${a}–${c}°</td><td>${xs.length}</td><td class="${!xs.length?'mut':e<=3?'ok':e<=6?'warn':'bad'}">${xs.length?'±'+e.toFixed(1)+'°':'—'}</td></tr>`;});
+      h+='</table>';}
+    if(O.length)h+=`<div class="row"><span>Đoán chồng lấn đúng</span><b>${(100*O.filter(i=>i.s===100).length/O.length).toFixed(0)}% (${O.length})</b></div>`;
+    h+=`<button class="ibtn" id="qReset" style="margin-top:8px;font-size:12px">Xoá thống kê</button>`;
+  }
+  $('#quizCard').innerHTML='<div class="cardHead"><b>Quiz</b></div>'+h;
+  const r=$('#qReset');if(r)r.onclick=()=>{localStorage.removeItem(STORE);renderQuizCard();};
+}
+$('#qSubmit').onclick=submitQuiz; $('#qNext').onclick=newQuiz;
+document.querySelectorAll('#qTypeSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#qTypeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  state.quiz.type=b.dataset.v;
+  $('#guessWrap').classList.toggle('hidden',state.quiz.type!=='angle');
+  $('#ovChips').classList.toggle('hidden',state.quiz.type!=='overlap');
+  newQuiz();
+});
+
+// ================= Thanh trên =================
+document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  state.mode=b.dataset.v; const quiz=state.mode==='quiz';
+  $('#dockSandbox').classList.toggle('hidden',quiz); $('#dockQuiz').classList.toggle('hidden',!quiz);
+  $('#quizCard').classList.toggle('hidden',!quiz);
+  if(quiz)newQuiz();else{state.quiz.revealed=true;update();}
+});
+document.querySelectorAll('#camSeg button').forEach(b=>b.onclick=()=>setCam(b.dataset.v));
+// ---- Chọn loại bàn
+const tp=$('#tablePop');
+function rebuildTable(){
+  state.cb=clampBall(state.cb);state.ob=separate(clampBall(state.ob),state.cb);
+  applyCloth();buildTable();setCam(state.cam,true);update();syncTableUI();
+}
+function syncTableUI(){
+  const P=PRESETS[state.preset];
+  document.querySelectorAll('#presetList .preset').forEach(b=>b.classList.toggle('on',b.dataset.v===state.preset));
+  document.querySelectorAll('#sizeSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.v===state.size));
+  document.querySelectorAll('#clothSw button').forEach(b=>b.classList.toggle('on',b.dataset.v===state.cloth));
+  $('#cwIn').value=(CW()*CM).toFixed(1);$('#swIn').value=(SW()*CM).toFixed(1);
+  $('#cwVal').textContent=(CW()*CM).toFixed(1)+' cm';$('#swVal').textContent=(SW()*CM).toFixed(1)+' cm';
+  $('#presetNote').textContent=P.note+'. Lỗ càng hẹp thì sai số cho phép càng nhỏ và độ khó càng cao.';
+  $('#tableName').textContent=P.short+' · '+state.size+'ft';
+}
+Object.entries(PRESETS).forEach(([k,P])=>{
+  const b=document.createElement('button');b.className='preset';b.dataset.v=k;
+  b.innerHTML=`<span>${P.name}</span><small>${k==='custom'?'tự nhập':P.cw.toFixed(1)+' / '+P.sw.toFixed(1)+' cm'}</small>`;
+  b.onclick=()=>{state.preset=k;if(k!=='custom'){state.cw=P.cw/CM;state.sw=P.sw/CM;state.cloth=P.cloth;state.look=P.look;}
+    applyLook();applyCloth();rebuildTable();};
+  $('#presetList').appendChild(b);
+});
+document.querySelectorAll('#sizeSeg button').forEach(b=>b.onclick=()=>{state.size=+b.dataset.v;rebuildTable();});
+const onPocketInput=()=>{state.preset='custom';state.cw=+$('#cwIn').value/CM;state.sw=+$('#swIn').value/CM;rebuildTable();};
+document.querySelectorAll('#wornSeg button').forEach(b=>b.onclick=()=>{state.worn=b.dataset.v==='1';
+  document.querySelectorAll('#wornSeg button').forEach(x=>x.classList.toggle('on',x===b));applyLook();applyCloth();rebuildTable();});
+$('#cwIn').oninput=onPocketInput;$('#swIn').oninput=onPocketInput;
+Object.entries(CLOTH).forEach(([k,[c]])=>{const b=document.createElement('button');b.dataset.v=k;b.style.background='#'+c.toString(16).padStart(6,'0');
+  b.title=CLOTH_NAMES[k];b.onclick=()=>{state.cloth=k;applyCloth();syncTableUI();};$('#clothSw').appendChild(b);});
+$('#tableBtn').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();tp.style.left=Math.min(r.left,innerWidth-302)+'px';tp.style.top=(r.bottom+8)+'px';tp.classList.toggle('open');lp.classList.remove('open');};
+document.addEventListener('pointerdown',e=>{if(!tp.contains(e.target)&&!$('#tableBtn').contains(e.target))tp.classList.remove('open');});
+const lp=$('#layersPop');
+Object.keys(LAYERS).forEach(k=>{const l=document.createElement('label');l.innerHTML=`<input type="checkbox" ${state.show[k]?'checked':''}> ${LAYERS[k]}`;
+  l.querySelector('input').onchange=e=>{state.show[k]=e.target.checked;update();};lp.appendChild(l);});
+$('#layersBtn').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();lp.style.left=Math.min(r.left,innerWidth-272)+'px';lp.style.top=(r.bottom+8)+'px';lp.classList.toggle('open');};
+document.addEventListener('pointerdown',e=>{if(!lp.contains(e.target)&&e.target!==$('#layersBtn'))lp.classList.remove('open');});
+$('#refBtn').onclick=()=>$('#modal').classList.add('open');
+$('#closeModal').onclick=()=>$('#modal').classList.remove('open');
+$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('open');};
+(function(){let h='<tr><th>Chồng lấn</th><th>%</th><th>Góc cắt</th><th>Lệch tâm ngắm</th><th>Bi cái lăn lệch</th></tr>';
+  FR.forEach(([n,lab])=>{const a=n===0?75:Math.asin(1-n/8)/DEG,s=Math.sin(a*DEG),tc=Math.atan2(s*Math.cos(a*DEG),s*s+0.4)/DEG;
+    h+=`<tr data-n="${n}"><td>${lab}</td><td>${n===0?'<6':(n/8*100).toFixed(1)}%</td><td>${n===0?'> 70°':a.toFixed(1)+'°'}</td><td>${(2*s).toFixed(2)}R</td><td>${tc.toFixed(1)}°</td></tr>`;});
+  $('#refTable').innerHTML=h;})();
+
+// ================= Render loop =================
+function resize(){
+  const w=innerWidth,h=innerHeight;renderer.setSize(w,h);
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  if(state.cam!=='player')setCam(state.cam,true);
+}
+addEventListener('resize',resize);
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(state.cam==='player'){const p=playerPose();camera.position.lerp(p.pos,0.2);camera.lookAt(p.tgt);}
+  else{
+    if(tween){tween.t=Math.min(1,tween.t+dt/0.7);const k=1-Math.pow(1-tween.t,3);
+      camera.position.lerpVectors(tween.fp,tween.tp,k);controls.target.lerpVectors(tween.ft,tween.tt,k);if(tween.t>=1)tween=null;}
+    controls.update();
+  }
+  const w=innerWidth,h=innerHeight;
+  renderer.setViewport(0,0,w,h);renderer.setScissorTest(false);renderer.render(scene,camera);
+  const pip=$('#pip');
+  if(!pip.classList.contains('hidden')){
+    const r=pip.getBoundingClientRect(),p=playerPose();
+    pipCam.position.copy(p.pos);pipCam.lookAt(p.tgt);pipCam.aspect=r.width/r.height;pipCam.updateProjectionMatrix();
+    const y=h-r.bottom;renderer.setScissorTest(true);renderer.setViewport(r.left,y,r.width,r.height);renderer.setScissor(r.left,y,r.width,r.height);
+    renderer.render(scene,pipCam);renderer.setScissorTest(false);
+  }
+  requestAnimationFrame(loop);
+}
+
+applyLook(); applyCloth(); buildTable(); syncTableUI(); resize(); setCam('angle',true); update(); renderQuizCard();
+$('#loading').remove();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pool Trainer – Mô phỏng ngắm 2D</title>
+<style>
+:root{--bg:#0e1015;--panel:#171a21;--line:#2a2f3a;--txt:#e6e8ee;--mut:#8b93a7;--acc:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--yel:#f5c400}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:17px;margin:0 8px 0 0;font-weight:700}
+header h1 span{color:var(--acc)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--mut);border:0;padding:7px 12px;cursor:pointer;font:inherit}
+.seg button.on{background:var(--acc);color:#04121c;font-weight:600}
+.btn{background:#222734;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;font:inherit}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc);color:#04121c;border-color:var(--acc);font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+select{background:#222734;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;padding:14px;align-items:start}
+@media(max-width:1000px){main{grid-template-columns:1fr}}
+#tableWrap{width:100%}
+canvas#table{width:100%;display:block;touch-action:none;border-radius:14px;cursor:grab}
+.hint{color:var(--mut);font-size:12.5px;margin:8px 2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.card h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed #252a35}
+.row:last-child{border-bottom:0}
+.row b{font-variant-numeric:tabular-nums}
+.big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.bigrow{display:flex;gap:10px;margin-bottom:8px}
+.bigrow>div{flex:1;background:#11141a;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.bigrow small{color:var(--mut);display:block;font-size:11.5px}
+.bar{height:8px;background:#11141a;border-radius:6px;overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%}
+canvas#pv{width:100%;height:200px;display:block;border-radius:10px;background:#0b2a1f}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px}
+.toggles label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips .btn{padding:5px 9px;font-size:13px}
+table.ref{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.ref td,table.ref th{padding:3px 6px;text-align:left;border-bottom:1px solid #222733}
+table.ref th{color:var(--mut);font-weight:500}
+table.ref tr.cur td{background:rgba(56,189,248,.16);color:#fff}
+.warn{color:var(--warn)} .bad{color:var(--bad)} .ok{color:var(--ok)} .mut{color:var(--mut)}
+input[type=range]{width:100%}
+.guessVal{font-size:30px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+#qResult{margin-top:10px}
+.hidden{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mut);margin:6px 2px}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎱 Pool <span>Trainer</span></h1>
+  <div class="seg" id="modeSeg">
+    <button data-mode="sandbox" class="on">Mô phỏng tự do</button>
+    <button data-mode="quiz">Quiz đoán góc</button>
+  </div>
+  <label class="mut">Bàn
+    <select id="sizeSel"><option value="9">9 ft</option><option value="8">8 ft</option><option value="7">7 ft</option></select>
+  </label>
+</header>
+
+<main>
+  <section>
+    <div id="tableWrap"><canvas id="table"></canvas></div>
+    <div class="hint" id="hint">Kéo <b>bi trắng</b> (bi cái) hoặc <b>bi vàng</b> (bi mục tiêu). Bấm vào một <b>lỗ</b> để chọn lỗ đích.</div>
+    <div class="legend">
+      <span><i style="background:#fff"></i>Đường ngắm bi cái → bi ma</span>
+      <span><i style="background:var(--yel)"></i>Đường bi mục tiêu → lỗ</span>
+      <span><i style="background:#60a5fa"></i>Bi cái sau va chạm (stun, 90°)</span>
+      <span><i style="background:#f472b6"></i>Bi cái lăn tự nhiên (follow, ≈)</span>
+      <span><i style="background:rgba(34,197,94,.7)"></i>Vùng sai số cho phép</span>
+    </div>
+
+    <div class="card" id="refCard" style="margin-top:12px">
+      <h3>Bảng quy đổi chồng lấn ↔ góc cắt (overlap = 1 − sin θ)</h3>
+      <table class="ref" id="refTable"></table>
+    </div>
+  </section>
+
+  <aside>
+    <!-- SANDBOX -->
+    <div id="sandboxPanel">
+      <div class="card">
+        <h3>Đặt nhanh góc cắt</h3>
+        <div class="chips" id="cutChips"></div>
+        <div class="chips" style="margin-top:6px">
+          <button class="btn" id="flipBtn">⇄ Đổi phía cắt</button>
+          <button class="btn" id="randBtn">🎲 Thế bi ngẫu nhiên</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quizPanel" class="hidden">
+      <div class="card">
+        <h3>Quiz</h3>
+        <div class="seg" id="qTypeSeg" style="margin-bottom:10px">
+          <button data-t="angle" class="on">Đoán góc cắt</button>
+          <button data-t="overlap">Đoán độ chồng lấn</button>
+        </div>
+        <div id="qAngle">
+          <div class="guessVal" id="guessVal">30°</div>
+          <input type="range" id="guess" min="0" max="90" step="1" value="30">
+        </div>
+        <div id="qOverlap" class="hidden">
+          <div class="chips" id="ovChips"></div>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <button class="btn pri" id="qSubmit">Kiểm tra</button>
+          <button class="btn" id="qNext">Câu mới →</button>
+        </div>
+        <div id="qResult"></div>
+      </div>
+      <div class="card">
+        <h3>Thống kê quiz</h3>
+        <div id="qStats"></div>
+        <button class="btn" id="qReset" style="margin-top:8px;font-size:12px">Xoá thống kê</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Thông số cú đánh</h3>
+      <div id="info"></div>
+    </div>
+
+    <div class="card">
+      <h3>Góc nhìn người chơi (từ sau bi cái)</h3>
+      <canvas id="pv"></canvas>
+      <div id="pvText" class="hint" style="margin-bottom:0"></div>
+    </div>
+
+    <div class="card" id="toggleCard">
+      <h3>Hiển thị</h3>
+      <div class="toggles" id="toggles"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+// ===== Hằng số (đơn vị: inch) =====
+const R = 1.125;                 // bán kính bi (2.25")
+const CORNER_W = 4.75, SIDE_W = 5.25;  // độ mở lỗ
+const RAIL = 6;                  // độ dày băng + khung (hiển thị)
+const CM = 2.54;
+const SIZES = {9:{L:100,W:50}, 8:{L:88,W:44}, 7:{L:78,W:39}};
+const DEG = Math.PI/180;
+
+// ===== Vector helpers =====
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y}), sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const mul=(a,k)=>({x:a.x*k,y:a.y*k}), dot=(a,b)=>a.x*b.x+a.y*b.y;
+const cross=(a,b)=>a.x*b.y-a.y*b.x, len=a=>Math.hypot(a.x,a.y);
+const norm=a=>{const l=len(a)||1;return {x:a.x/l,y:a.y/l}};
+const rot=(v,a)=>({x:v.x*Math.cos(a)-v.y*Math.sin(a), y:v.x*Math.sin(a)+v.y*Math.cos(a)});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+const ang=v=>Math.atan2(v.y,v.x);
+
+// ===== State =====
+const state = {
+  size: 9,
+  cb: {x:28, y:32}, ob: {x:74, y:15}, pocket: 2,
+  mode: 'sandbox',
+  show: {ghost:true, aim:true, obline:true, arc:true, stun:true, follow:true, margin:true, contact:true},
+  quiz: {type:'angle', revealed:false, overlapPick:null},
+  drag: null
+};
+const TOGGLE_LABELS = {ghost:'Bi ma (ghost ball)', aim:'Đường ngắm', obline:'Đường vào lỗ', arc:'Cung góc cắt',
+  stun:'Đường stun 90°', follow:'Đường follow', margin:'Vùng sai số', contact:'Điểm tiếp xúc'};
+const T = () => SIZES[state.size];
+
+function pockets(){
+  const {L,W} = T(), s = Math.SQRT1_2;
+  const P = [
+    {x:0,  y:0, into:{x:-s,y:-s}, side:false},
+    {x:L/2,y:0, into:{x:0, y:-1}, side:true},
+    {x:L,  y:0, into:{x:s, y:-s}, side:false},
+    {x:0,  y:W, into:{x:-s,y:s},  side:false},
+    {x:L/2,y:W, into:{x:0, y:1},  side:true},
+    {x:L,  y:W, into:{x:s, y:s},  side:false},
+  ];
+  P.forEach(p=>{ p.aim = p.side ? add(p, mul(p.into,0.3)) : sub(p, mul(p.into,1.0)); });
+  return P;
+}
+const inside=(p,m=0)=>{const {L,W}=T();return p.x>=R+m&&p.x<=L-R-m&&p.y>=R+m&&p.y<=W-R-m};
+
+// ===== Hình học cú đánh =====
+function geom(){
+  const {cb, ob} = state, P = pockets()[state.pocket];
+  const toP = sub(P.aim, ob), Lp = len(toP), u = mul(toP, 1/Lp);
+  const gb = sub(ob, mul(u, 2*R));
+  const v = sub(gb, cb), D = len(v), vn = mul(v, 1/(D||1));
+  const cosT = clamp(dot(vn,u), -1, 1), theta = Math.acos(cosT);
+  const cr = cross(vn, u);
+  const right = {x:-vn.y, y:vn.x};
+  const lateral = dot(sub(gb, ob), right);       // >0: bi ma nằm bên phải bi mục tiêu
+  const overlap = Math.max(0, 1 - Math.sin(theta));
+  const offset = 2*R*Math.sin(theta);           // khoảng lệch tâm (inch)
+
+  // Lỗ: góc vào & sai số cho phép (ước tính)
+  const cosB = dot(u, P.into), beta = Math.acos(clamp(cosB,-1,1));
+  const Wp = P.side ? SIDE_W : CORNER_W;
+  const h = Wp/2*cosB - 0.95*R;                  // nửa bề rộng mục tiêu hiệu dụng
+  const dphi = h > 0 ? Math.atan(h/Lp) : 0;      // sai số hướng bi mục tiêu (rad)
+  const gbOk = inside(gb, -0.01);
+  let reason = null;
+  if (theta >= 88*DEG) reason = 'Góc cắt ≥ 88°: không thể đưa bi vào lỗ này.';
+  else if (!gbOk) reason = 'Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ma.';
+  else if (h <= 0) reason = 'Góc vào lỗ quá xiên: bi sẽ chạm má lỗ.';
+  const possible = !reason;
+  const dalpha = possible ? dphi*2*R*Math.cos(theta)/D : 0;  // sai số ngắm tại bi cái (rad)
+
+  // Bi cái sau va chạm
+  let t = sub(vn, mul(u, cosT)); t = len(t) > 1e-6 ? norm(t) : {x:-u.y, y:u.x};
+  const s = Math.sin(theta);
+  const thetaC = Math.atan2(s*Math.cos(theta), s*s + 0.4);   // lăn tự nhiên (công thức 2/5)
+  const sg = Math.sign(cross(vn, t)) || 1;
+  const fdir = rot(vn, sg*thetaC);
+
+  // Độ khó
+  const da = dalpha/DEG;
+  const diff = possible ? clamp(100*Math.log(3/Math.max(da,1e-4))/Math.log(3/0.12), 0, 100) : 100;
+
+  return {P, u, gb, D, vn, theta, cr, lateral, overlap, offset, Lp, beta, dphi, dalpha, possible, reason, t, thetaC, fdir, diff, h};
+}
+
+const FR = [[8,'Full (1)'],[7,'7/8'],[6,'3/4'],[5,'5/8'],[4,'1/2'],[3,'3/8'],[2,'1/4'],[1,'1/8'],[0,'Rất mỏng']];
+const fracLabel = ov => { const n = Math.round(ov*8); return FR.find(f=>f[0]===n)[1]; };
+const fracAngle = n => Math.asin(1 - n/8)/DEG;
+
+// ===== Canvas bàn =====
+const cv = document.getElementById('table'), ctx = cv.getContext('2d');
+let scale = 8, dpr = 1;
+function resize(){
+  const {L,W} = T();
+  dpr = window.devicePixelRatio || 1;
+  const w = document.getElementById('tableWrap').clientWidth;
+  scale = w / (L + 2*RAIL);
+  const h = (W + 2*RAIL) * scale;
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  cv.style.height = h + 'px';
+  render();
+}
+
+function rayExit(p, d){
+  const {L,W} = T(); let t = Infinity;
+  if (d.x > 1e-9) t = Math.min(t, (L-R-p.x)/d.x); else if (d.x < -1e-9) t = Math.min(t, (R-p.x)/d.x);
+  if (d.y > 1e-9) t = Math.min(t, (W-R-p.y)/d.y); else if (d.y < -1e-9) t = Math.min(t, (R-p.y)/d.y);
+  if (!isFinite(t) || t < 0) t = 0;
+  return add(p, mul(d, t));
+}
+
+function line(a, b, color, w, dash){
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+  ctx.strokeStyle = color; ctx.lineWidth = w/scale; ctx.setLineDash(dash ? dash.map(x=>x/scale) : []);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function circle(c, r, fill, stroke, w, dash){
+  ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI*2);
+  if (fill){ ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = w/scale; ctx.setLineDash(dash ? dash.map(x=>x/scale) : []); ctx.stroke(); ctx.setLineDash([]); }
+}
+function label(text, p, color='#fff', size=13, bg='rgba(0,0,0,.6)'){
+  const fs = size/scale;
+  ctx.font = `600 ${fs}px system-ui, sans-serif`;
+  const w = ctx.measureText(text).width, pad = 4/scale;
+  ctx.fillStyle = bg; ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(p.x - w/2 - pad, p.y - fs*0.75 - pad, w + 2*pad, fs*1.2 + 2*pad, 4/scale)
+                : ctx.rect(p.x - w/2 - pad, p.y - fs*0.75 - pad, w + 2*pad, fs*1.2 + 2*pad);
+  ctx.fill();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, p.x, p.y);
+}
+function ball(c, color, num){
+  const g = ctx.createRadialGradient(c.x - R*0.35, c.y - R*0.4, R*0.1, c.x, c.y, R);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.25, color); g.addColorStop(1, shade(color));
+  circle(c, R, g, 'rgba(0,0,0,.5)', 1);
+  if (num){
+    circle(c, R*0.48, '#fff');
+    ctx.fillStyle = '#111'; ctx.font = `700 ${R*0.62}px system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(num, c.x, c.y + R*0.03);
+  }
+}
+function shade(hex){ return hex === '#f8f8f2' ? '#b9b9b0' : '#9a7a00'; }
+
+function render(){
+  const {L,W} = T();
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  const k = dpr*scale;
+  ctx.setTransform(k,0,0,k,k*RAIL,k*RAIL);
+
+  // Khung gỗ + băng
+  ctx.fillStyle = '#4a2c17'; ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-RAIL,-RAIL,L+2*RAIL,W+2*RAIL,2.5) : ctx.rect(-RAIL,-RAIL,L+2*RAIL,W+2*RAIL); ctx.fill();
+  ctx.fillStyle = '#0b5d3b'; ctx.fillRect(-2,-2,L+4,W+4);
+  const cloth = ctx.createRadialGradient(L/2,W/2,5,L/2,W/2,L*0.65);
+  cloth.addColorStop(0,'#1a8a5a'); cloth.addColorStop(1,'#0f6e46');
+  ctx.fillStyle = cloth; ctx.fillRect(0,0,L,W);
+
+  // Diamonds
+  ctx.fillStyle = '#e9e3cf';
+  const dy = -RAIL*0.62;
+  for (let i=1;i<8;i++){ if(i===4) continue; const x=L*i/8;
+    diamond(x, dy); diamond(x, W-dy); }
+  for (let i=1;i<4;i++){ const y=W*i/4; diamond(dy, y); diamond(L-dy, y); }
+
+  // Head string, foot spot
+  line({x:L/4,y:0},{x:L/4,y:W},'rgba(255,255,255,.08)',1);
+  circle({x:L*3/4,y:W/2}, 0.35, 'rgba(255,255,255,.25)');
+
+  // Lỗ
+  const g = geom();
+  pockets().forEach((p,i)=>{
+    const c = p.side ? add(p, mul(p.into,1.6)) : add(p, mul(p.into,1.1));
+    const r = p.side ? 2.6 : 2.45;
+    circle(c, r, '#050505');
+    if (i === state.pocket){ circle(c, r+0.5, null, '#38bdf8', 3); }
+  });
+
+  const hide = state.mode === 'quiz' && !state.quiz.revealed;
+  const S = state.show;
+
+  if (!hide){
+    // Vùng sai số
+    if (S.margin && g.possible){
+      wedge(state.ob, ang(g.u), g.dphi, g.Lp, 'rgba(34,197,94,.22)');
+      wedge(state.cb, ang(g.vn), g.dalpha, g.D, 'rgba(34,197,94,.30)');
+    }
+    if (S.obline) line(state.ob, g.P.aim, '#f5c400', 2, [8,5]);
+    if (S.aim) line(state.cb, g.gb, g.possible ? '#ffffff' : '#ef4444', 2);
+    if (S.stun && g.possible) line(g.gb, rayExit(g.gb, g.t), '#60a5fa', 2, [6,5]);
+    if (S.follow && g.possible) line(g.gb, rayExit(g.gb, g.fdir), '#f472b6', 2, [3,4]);
+    if (S.arc && g.theta > 0.5*DEG){
+      const ext = add(g.gb, mul(g.vn, 9));
+      line(g.gb, ext, 'rgba(255,255,255,.45)', 1, [3,3]);
+      const r = 6, a1 = ang(g.vn), a2 = ang(g.u);
+      ctx.beginPath(); ctx.arc(g.gb.x, g.gb.y, r, a1, a2, g.cr < 0);
+      ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2/scale; ctx.stroke();
+    }
+    if (S.ghost) circle(g.gb, R, 'rgba(255,255,255,.12)', 'rgba(255,255,255,.8)', 1.5, [4,3]);
+  }
+
+  ball(state.ob, '#f5c400', '1');
+  ball(state.cb, '#f8f8f2');
+
+  if (!hide){
+    if (S.contact){
+      const cp = sub(state.ob, mul(g.u, R));
+      circle(cp, 0.28, '#ef4444', '#fff', 1);
+    }
+    if (S.arc && g.theta > 0.5*DEG){
+      const bis = norm(add(g.vn, g.u));
+      label(`θ = ${(g.theta/DEG).toFixed(1)}°`, add(g.gb, mul(bis, 10)), '#fde047');
+    } else if (S.arc) label('Bi thẳng 0°', add(g.gb, {x:0,y:-4}), '#fde047');
+    label(`${fracLabel(g.overlap)} bi`, add(state.cb, {x:0, y: state.cb.y > 6 ? -3.2 : 3.2}), '#7dd3fc', 12);
+  }
+  if (!g.possible && !hide) label('⚠ ' + g.reason, {x:L/2, y:W-3}, '#fecaca', 13, 'rgba(127,29,29,.85)');
+  if (hide) label('Góc cắt bao nhiêu?', {x:L/2, y:3.5}, '#fff', 14);
+
+  updateInfo(g, hide);
+  drawPV(g, hide);
+}
+function diamond(x,y){ const s=0.55; ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s*0.6,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s*0.6,y); ctx.closePath(); ctx.fill(); }
+function wedge(p, a, half, length, color){
+  const vis = Math.max(half, 0.15*DEG);
+  ctx.beginPath(); ctx.moveTo(p.x,p.y);
+  ctx.lineTo(p.x+Math.cos(a-vis)*length, p.y+Math.sin(a-vis)*length);
+  ctx.lineTo(p.x+Math.cos(a+vis)*length, p.y+Math.sin(a+vis)*length);
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+
+// ===== Panel thông số =====
+function diffInfo(d){
+  if (d < 30) return ['Dễ', 'var(--ok)'];
+  if (d < 55) return ['Trung bình', '#a3e635'];
+  if (d < 75) return ['Khó', 'var(--warn)'];
+  return ['Rất khó', 'var(--bad)'];
+}
+function updateInfo(g, hide){
+  const el = document.getElementById('info');
+  const th = g.theta/DEG;
+  const q = hide ? '—' : null;
+  const side = g.lateral > 0.001 ? 'TRÁI' : g.lateral < -0.001 ? 'PHẢI' : 'thẳng';
+  const [dl, dc] = diffInfo(g.diff);
+  el.innerHTML = `
+    <div class="bigrow">
+      <div><small>Góc cắt θ</small><div class="big" style="color:#fde047">${q ?? th.toFixed(1)+'°'}</div></div>
+      <div><small>Chồng lấn</small><div class="big" style="color:#7dd3fc">${q ?? (g.overlap*100).toFixed(0)+'%'}</div>
+        <small>${q ? '' : '≈ ' + fracLabel(g.overlap) + ' bi'}</small></div>
+    </div>
+    <div class="row"><span>Bi mục tiêu đi sang</span><b>${q ?? side}</b></div>
+    <div class="row"><span>Độ lệch tâm ngắm (2R·sin θ)</span><b>${q ?? (g.offset/R).toFixed(2)+'R · '+(g.offset*25.4).toFixed(1)+' mm'}</b></div>
+    <div class="row"><span>Bi cái → bi ma</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Bi mục tiêu → lỗ</span><b>${(g.Lp*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Góc vào lỗ (so với trục lỗ)</span><b>${q ?? (g.beta/DEG).toFixed(0)+'°'}</b></div>
+    <div class="row"><span>Sai số cho phép – hướng bi mục tiêu</span><b>${q ?? (g.possible ? '±'+(g.dphi/DEG).toFixed(2)+'°' : '—')}</b></div>
+    <div class="row"><span>Sai số cho phép – ngắm bi cái</span><b>${q ?? (g.possible ? '±'+(g.dalpha/DEG).toFixed(2)+'°' : '—')}</b></div>
+    <div class="row"><span>Bi cái stun (trượt) sau chạm</span><b>${q ?? 'lệch 90° so với bi mục tiêu'}</b></div>
+    <div class="row"><span>Bi cái lăn tự nhiên lệch</span><b>${q ?? (g.thetaC/DEG).toFixed(1)+'° so với hướng đánh'}</b></div>
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between"><span>Độ khó</span><b style="color:${hide?'var(--mut)':dc}">${q ?? (g.possible ? dl+' · '+g.diff.toFixed(0)+'/100' : 'Không thể')}</b></div>
+      <div class="bar"><i style="width:${hide?0:g.diff}%;background:${dc}"></i></div>
+    </div>
+    <div class="hint" style="margin-bottom:0">Sai số cho phép là ước tính theo độ mở lỗ (góc ${CORNER_W}", giữa ${SIDE_W}"), chưa tính throw và xoáy.</div>`;
+  // highlight bảng tham chiếu
+  const n = hide ? -1 : Math.round(g.overlap*8);
+  document.querySelectorAll('#refTable tr[data-n]').forEach(tr => tr.classList.toggle('cur', +tr.dataset.n === n));
+}
+
+// ===== Góc nhìn người chơi =====
+const pv = document.getElementById('pv'), pctx = pv.getContext('2d');
+function drawPV(g, hide){
+  const w = pv.clientWidth, h = pv.clientHeight;
+  pv.width = Math.round(w*dpr); pv.height = Math.round(h*dpr);
+  pctx.setTransform(dpr,0,0,dpr,0,0);
+  pctx.fillStyle = '#0f6e46'; pctx.fillRect(0,0,w,h);
+  const txt = document.getElementById('pvText');
+  if (hide || (state.mode==='quiz' && !state.quiz.revealed)){
+    pctx.fillStyle = 'rgba(255,255,255,.7)'; pctx.font = '600 14px system-ui'; pctx.textAlign='center';
+    pctx.fillText('Ẩn trong lúc đoán', w/2, h/2); txt.textContent = ''; return;
+  }
+  const rp = Math.min(w/7, h/3.4), cx = w/2, cy = h*0.5;
+  const off = clamp(g.lateral/R, -2.2, 2.2) * rp;
+  // Bi mục tiêu
+  const grd = pctx.createRadialGradient(cx-rp*.35, cy-rp*.4, rp*.1, cx, cy, rp);
+  grd.addColorStop(0,'#fff'); grd.addColorStop(.25,'#f5c400'); grd.addColorStop(1,'#9a7a00');
+  pctx.beginPath(); pctx.arc(cx,cy,rp,0,Math.PI*2); pctx.fillStyle=grd; pctx.fill();
+  // Vùng chồng lấn
+  pctx.save(); pctx.beginPath(); pctx.arc(cx,cy,rp,0,Math.PI*2); pctx.clip();
+  pctx.beginPath(); pctx.arc(cx+off,cy,rp,0,Math.PI*2); pctx.fillStyle='rgba(56,189,248,.55)'; pctx.fill(); pctx.restore();
+  // Bóng bi cái (bi ma)
+  pctx.beginPath(); pctx.arc(cx+off,cy,rp,0,Math.PI*2);
+  pctx.fillStyle='rgba(255,255,255,.10)'; pctx.fill();
+  pctx.setLineDash([5,4]); pctx.strokeStyle='#fff'; pctx.lineWidth=1.5; pctx.stroke(); pctx.setLineDash([]);
+  // Đường ngắm (tâm bi cái) & tâm bi mục tiêu
+  pctx.beginPath(); pctx.moveTo(cx+off, 8); pctx.lineTo(cx+off, h-8);
+  pctx.strokeStyle='#fde047'; pctx.lineWidth=2; pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(cx, cy-rp-6); pctx.lineTo(cx, cy+rp+6);
+  pctx.strokeStyle='rgba(0,0,0,.45)'; pctx.lineWidth=1; pctx.stroke();
+  // Thước lệch
+  pctx.beginPath(); pctx.moveTo(cx, cy+rp+14); pctx.lineTo(cx+off, cy+rp+14);
+  pctx.strokeStyle='#fde047'; pctx.lineWidth=1.5; pctx.stroke();
+  pctx.fillStyle='#fff'; pctx.font='600 12px system-ui'; pctx.textAlign='center';
+  pctx.fillText(`lệch ${(Math.abs(g.lateral)/R).toFixed(2)}R`, cx+off/2, cy+rp+28 > h-4 ? h-4 : cy+rp+28);
+  pctx.textAlign='left'; pctx.fillText(`Chồng lấn ${(g.overlap*100).toFixed(0)}% ≈ ${fracLabel(g.overlap)}`, 8, 18);
+
+  const o = Math.abs(g.lateral)/R;
+  let where;
+  if (o < 0.05) where = 'ngắm thẳng vào tâm bi mục tiêu';
+  else if (Math.abs(o-1) < 0.05) where = 'ngắm tâm bi cái vào đúng MÉP bi mục tiêu (half-ball)';
+  else if (o < 1) where = `ngắm tâm bi cái vào điểm cách tâm bi mục tiêu ${o.toFixed(2)}R (bên trong bi)`;
+  else where = `ngắm tâm bi cái ra ngoài mép bi mục tiêu ${(o-1).toFixed(2)}R`;
+  const side = g.lateral > 0 ? 'phải' : 'trái';
+  txt.innerHTML = o < 0.05 ? `Bi thẳng: ${where}.` :
+    `Lệch về bên <b>${side}</b>: ${where}. Vùng xanh là phần bi cái "phủ" lên bi mục tiêu khi bạn cúi xuống ngắm.`;
+}
+
+// ===== Tương tác chuột / cảm ứng =====
+function toTable(e){
+  const r = cv.getBoundingClientRect();
+  return {x:(e.clientX - r.left)/scale - RAIL, y:(e.clientY - r.top)/scale - RAIL};
+}
+function clampBall(p){ const {L,W}=T(); return {x:clamp(p.x,R,L-R), y:clamp(p.y,R,W-R)}; }
+function separate(moving, other){
+  const d = sub(moving, other), l = len(d);
+  if (l < 2*R){ const n = l > 1e-6 ? mul(d,1/l) : {x:1,y:0}; return clampBall(add(other, mul(n, 2*R+0.01))); }
+  return moving;
+}
+cv.addEventListener('pointerdown', e=>{
+  const p = toTable(e);
+  const lock = state.mode==='quiz' && !state.quiz.revealed;
+  if (!lock){
+    if (len(sub(p,state.cb)) < 2.6*R) state.drag = 'cb';
+    else if (len(sub(p,state.ob)) < 2.6*R) state.drag = 'ob';
+  }
+  if (state.drag){ cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing'; return; }
+  if (!lock){
+    const ps = pockets(); let best=-1, bd=6;
+    ps.forEach((q,i)=>{ const d=len(sub(p,q)); if(d<bd){bd=d;best=i;} });
+    if (best >= 0){ state.pocket = best; render(); }
+  }
+});
+cv.addEventListener('pointermove', e=>{
+  if (!state.drag) return;
+  const p = clampBall(toTable(e));
+  if (state.drag==='cb') state.cb = separate(p, state.ob);
+  else state.ob = separate(p, state.cb);
+  render();
+});
+const endDrag = ()=>{ state.drag=null; cv.style.cursor='grab'; };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+// ===== Sandbox: đặt góc =====
+function placeCut(deg, sideSign){
+  const g = geom();
+  let D = clamp(g.D, 8, 60);
+  for (const s of [sideSign, -sideSign]){
+    for (let d = D; d >= 3*R; d -= 1){
+      const vn = rot(g.u, -s*deg*DEG);
+      const cb = sub(g.gb, mul(vn, d));
+      if (inside(cb, 0.2) && len(sub(cb, state.ob)) > 2*R+0.1){ state.cb = cb; render(); return; }
+    }
+  }
+}
+const curSide = () => { const g = geom(); return g.cr >= 0 ? 1 : -1; };
+const chips = document.getElementById('cutChips');
+[0, 7.2, 14.5, 22, 30, 38.7, 48.6, 61, 75].forEach(a=>{
+  const b = document.createElement('button'); b.className='btn';
+  b.textContent = a+'°'; b.title = 'Chồng lấn ' + fracLabel(1-Math.sin(a*DEG));
+  b.onclick = ()=>placeCut(a, curSide()); chips.appendChild(b);
+});
+document.getElementById('flipBtn').onclick = ()=>placeCut(geom().theta/DEG, -curSide());
+document.getElementById('randBtn').onclick = ()=>{ genPosition(); render(); };
+
+// ===== Tạo thế bi ngẫu nhiên =====
+function genPosition(minA=3, maxA=78){
+  const {L,W} = T();
+  for (let i=0;i<2000;i++){
+    const pi = Math.floor(Math.random()*6), P = pockets()[pi];
+    const ob = {x:rand(6,L-6), y:rand(5,W-5)};
+    const toP = sub(P.aim, ob), Lp = len(toP); if (Lp < 8) continue;
+    const u = mul(toP, 1/Lp);
+    const h = (P.side?SIDE_W:CORNER_W)/2*dot(u,P.into) - 0.95*R; if (h < 0.35) continue;
+    const th = rand(minA, maxA)*DEG, s = Math.random()<.5 ? 1 : -1, D = rand(10, 55);
+    const gb = sub(ob, mul(u, 2*R));
+    const cb = sub(gb, mul(rot(u, -s*th), D));
+    if (!inside(cb, 1.5) || !inside(gb, 0.3)) continue;
+    if (pockets().some(q => len(sub(cb,q)) < 7)) continue;
+    state.ob = ob; state.cb = cb; state.pocket = pi; return true;
+  }
+  return false;
+}
+
+// ===== Quiz =====
+const STORE = 'pooltrainer.quiz.v1';
+const loadStats = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {items:[]}; } catch { return {items:[]}; } };
+const saveStats = s => localStorage.setItem(STORE, JSON.stringify(s));
+const guess = document.getElementById('guess'), guessVal = document.getElementById('guessVal');
+guess.oninput = ()=> guessVal.textContent = guess.value + '°';
+
+const ovChips = document.getElementById('ovChips');
+FR.forEach(([n,lab])=>{
+  const b = document.createElement('button'); b.className='btn'; b.textContent = lab; b.dataset.n = n;
+  b.onclick = ()=>{ if(state.quiz.revealed) return; state.quiz.overlapPick = n;
+    ovChips.querySelectorAll('button').forEach(x=>x.classList.toggle('pri', x===b)); };
+  ovChips.appendChild(b);
+});
+
+function newQuiz(){
+  genPosition(state.quiz.type==='overlap' ? 0 : 2, 78);
+  state.quiz.revealed = false; state.quiz.overlapPick = null;
+  ovChips.querySelectorAll('button').forEach(x=>x.classList.remove('pri'));
+  document.getElementById('qResult').innerHTML = '';
+  document.getElementById('qSubmit').disabled = false;
+  render();
+}
+function submitQuiz(){
+  if (state.quiz.revealed) return;
+  const g = geom(), th = g.theta/DEG, stats = loadStats();
+  let html;
+  if (state.quiz.type === 'angle'){
+    const gs = +guess.value, err = gs - th, score = Math.max(0, Math.round(100 - 8*Math.abs(err)));
+    stats.items.push({t:'a', th, g:gs, e:err, s:score});
+    const c = Math.abs(err) <= 3 ? 'ok' : Math.abs(err) <= 7 ? 'warn' : 'bad';
+    html = `<div class="row"><span>Góc thực tế</span><b>${th.toFixed(1)}°</b></div>
+      <div class="row"><span>Bạn đoán</span><b>${gs}°</b></div>
+      <div class="row"><span>Sai lệch</span><b class="${c}">${err>0?'+':''}${err.toFixed(1)}°</b></div>
+      <div class="row"><span>Điểm</span><b class="${c}">${score}/100</b></div>
+      <div class="hint">${Math.abs(err)<=3 ? 'Rất chuẩn!' : err < 0 ? 'Bạn đoán NHỎ hơn thực tế, dễ dẫn tới cắt dày (undercut).' : 'Bạn đoán LỚN hơn thực tế, dễ dẫn tới cắt mỏng (overcut).'}</div>`;
+  } else {
+    const pick = state.quiz.overlapPick;
+    if (pick === null){ document.getElementById('qResult').innerHTML = '<span class="warn">Hãy chọn một mức chồng lấn.</span>'; return; }
+    const ans = Math.round(g.overlap*8), diff = pick - ans, score = diff===0 ? 100 : Math.abs(diff)===1 ? 50 : 0;
+    stats.items.push({t:'o', th, g:pick, e:diff, s:score});
+    const c = score===100 ? 'ok' : score===50 ? 'warn' : 'bad';
+    html = `<div class="row"><span>Đáp án</span><b>${fracLabel(g.overlap)} (${(g.overlap*100).toFixed(0)}%, θ=${th.toFixed(1)}°)</b></div>
+      <div class="row"><span>Bạn chọn</span><b>${FR.find(f=>f[0]===pick)[1]}</b></div>
+      <div class="row"><span>Điểm</span><b class="${c}">${score}/100</b></div>
+      <div class="hint">${diff===0 ? 'Chính xác!' : diff > 0 ? 'Bạn chọn DÀY hơn thực tế, bi sẽ bị cắt dày (undercut).' : 'Bạn chọn MỎNG hơn thực tế, bi sẽ bị cắt mỏng (overcut).'}</div>`;
+  }
+  stats.items = stats.items.slice(-300); saveStats(stats);
+  state.quiz.revealed = true;
+  document.getElementById('qResult').innerHTML = html;
+  document.getElementById('qSubmit').disabled = true;
+  render(); renderStats();
+}
+function renderStats(){
+  const items = loadStats().items, el = document.getElementById('qStats');
+  if (!items.length){ el.innerHTML = '<span class="mut">Chưa có dữ liệu. Làm vài câu quiz nhé!</span>'; return; }
+  const A = items.filter(i=>i.t==='a'), O = items.filter(i=>i.t==='o');
+  const avg = (arr,f) => arr.length ? arr.reduce((s,x)=>s+f(x),0)/arr.length : 0;
+  let html = `<div class="row"><span>Tổng số câu</span><b>${items.length}</b></div>
+    <div class="row"><span>Điểm trung bình</span><b>${avg(items,i=>i.s).toFixed(0)}/100</b></div>`;
+  if (A.length){
+    const bias = avg(A,i=>i.e);
+    html += `<div class="row"><span>Đoán góc – sai số TB</span><b>±${avg(A,i=>Math.abs(i.e)).toFixed(1)}°</b></div>
+      <div class="row"><span>Xu hướng</span><b class="${Math.abs(bias)<1.5?'ok':'warn'}">${Math.abs(bias)<1.5?'Cân bằng':bias<0?'Đoán nhỏ hơn ('+bias.toFixed(1)+'°)':'Đoán lớn hơn (+'+bias.toFixed(1)+'°)'}</b></div>`;
+    const B = [[0,15],[15,30],[30,45],[45,60],[60,90]];
+    html += `<table class="ref" style="margin-top:8px"><tr><th>Dải góc</th><th>Số câu</th><th>Sai số TB</th></tr>`;
+    B.forEach(([a,b])=>{
+      const xs = A.filter(i=>i.th>=a && i.th<b);
+      const e = avg(xs,i=>Math.abs(i.e));
+      const c = !xs.length ? 'mut' : e<=3 ? 'ok' : e<=6 ? 'warn' : 'bad';
+      html += `<tr><td>${a}–${b}°</td><td>${xs.length}</td><td class="${c}">${xs.length ? '±'+e.toFixed(1)+'°' : '—'}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+  if (O.length) html += `<div class="row" style="margin-top:6px"><span>Đoán chồng lấn – đúng</span><b>${(100*O.filter(i=>i.s===100).length/O.length).toFixed(0)}% (${O.length} câu)</b></div>`;
+  el.innerHTML = html;
+}
+document.getElementById('qSubmit').onclick = submitQuiz;
+document.getElementById('qNext').onclick = newQuiz;
+document.getElementById('qReset').onclick = ()=>{ localStorage.removeItem(STORE); renderStats(); };
+document.querySelectorAll('#qTypeSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#qTypeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  state.quiz.type = b.dataset.t;
+  document.getElementById('qAngle').classList.toggle('hidden', b.dataset.t!=='angle');
+  document.getElementById('qOverlap').classList.toggle('hidden', b.dataset.t!=='overlap');
+  newQuiz();
+});
+
+// ===== Mode, size, toggles =====
+document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  state.mode = b.dataset.mode;
+  document.getElementById('sandboxPanel').classList.toggle('hidden', state.mode!=='sandbox');
+  document.getElementById('quizPanel').classList.toggle('hidden', state.mode!=='quiz');
+  document.getElementById('hint').innerHTML = state.mode==='quiz'
+    ? 'Ước lượng góc cắt để đưa <b>bi vàng</b> vào <b>lỗ được đánh dấu xanh</b>. Sau khi kiểm tra, bạn có thể kéo bi để khám phá thêm.'
+    : 'Kéo <b>bi trắng</b> (bi cái) hoặc <b>bi vàng</b> (bi mục tiêu). Bấm vào một <b>lỗ</b> để chọn lỗ đích.';
+  if (state.mode==='quiz') newQuiz(); else { state.quiz.revealed = true; render(); }
+  renderStats();
+});
+document.getElementById('sizeSel').onchange = e=>{
+  state.size = +e.target.value;
+  state.cb = clampBall(state.cb); state.ob = separate(clampBall(state.ob), state.cb);
+  resize();
+};
+const tg = document.getElementById('toggles');
+Object.keys(TOGGLE_LABELS).forEach(k=>{
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" ${state.show[k]?'checked':''}> ${TOGGLE_LABELS[k]}`;
+  l.querySelector('input').onchange = e=>{ state.show[k] = e.target.checked; render(); };
+  tg.appendChild(l);
+});
+
+// Bảng tham chiếu
+(function(){
+  let h = '<tr><th>Chồng lấn</th><th>%</th><th>Góc cắt</th><th>Lệch tâm ngắm</th><th>Bi cái lăn lệch</th></tr>';
+  FR.forEach(([n,lab])=>{
+    const a = n===0 ? 75 : fracAngle(n), s = Math.sin(a*DEG);
+    const tc = Math.atan2(s*Math.cos(a*DEG), s*s+0.4)/DEG;
+    h += `<tr data-n="${n}"><td>${lab}</td><td>${n===0?'<6':(n/8*100).toFixed(1)}%</td><td>${n===0?'> 70°':a.toFixed(1)+'°'}</td><td>${(2*s).toFixed(2)}R</td><td>${tc.toFixed(1)}°</td></tr>`;
+  });
+  document.getElementById('refTable').innerHTML = h;
+})();
+
+window.addEventListener('resize', resize);
+state.quiz.revealed = true;
+resize(); renderStats();
+</script>
+</body>
+</html>
