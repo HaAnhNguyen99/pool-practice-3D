@@ -53,6 +53,12 @@ select.ibtn option{background:#151922}
 .vid .play span{width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:22px;padding-left:4px}
 .vid .tag{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.65);border-radius:6px;padding:2px 7px;font-size:11.5px}
 .vid iframe{width:100%;height:100%;border:0;display:block}
+.slots{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-bottom:10px}
+.slot{background:var(--glass2);border:1px solid var(--bd);border-radius:8px;padding:5px 0 4px;text-align:center;cursor:pointer;color:var(--mut);font:inherit;font-size:10.5px;line-height:1.2}
+.slot i{display:block;width:6px;height:6px;border-radius:50%;margin:3px auto 0;background:#3a404c}
+.slot.has i{background:var(--ok)}
+.slot.cur{border-color:var(--acc);color:var(--txt);background:rgba(61,214,196,.12)}
+.slot:hover{border-color:rgba(255,255,255,.3)}
 .clipMeta{font-size:13px;margin-bottom:6px}
 .clipMeta .mut{font-size:12px}
 .clipNav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -203,9 +209,10 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
     <div class="aimtip" id="cutTip" style="margin-bottom:0"></div>
   </div>
   <div id="clipCard" class="glass card">
-    <div class="cardHead"><b>🎬 Clip cơ thủ chuyên nghiệp</b><span id="clipBucket"></span></div>
+    <div class="cardHead"><b>🎬 Clip cơ thủ chuyên nghiệp</b><label class="mut" style="display:flex;gap:5px;align-items:center;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="clipAuto" checked style="accent-color:var(--acc)"> Tự phát</label></div>
+    <div class="slots" id="clipSlots"></div>
     <div id="clipBody"></div>
-    <details class="add" id="clipAdd"><summary>+ Thêm clip cho thế bi này</summary>
+    <details class="add" id="clipAdd"><summary>⚙ Quản lý clip</summary>
       <div class="form">
         <div class="note" style="margin:0">Dựng thế bi trên bàn 3D <b>giống cú đánh trong clip</b> (kéo bi, chọn lỗ). Góc cắt của clip sẽ lấy theo thế bi đó: <b id="caTheta" style="color:var(--yel)">—</b></div>
         <input type="text" id="caUrl" placeholder="Link YouTube (youtu.be/… hoặc youtube.com/watch?v=…)">
@@ -938,7 +945,7 @@ document.querySelectorAll('#qTypeSeg button').forEach(b=>b.onclick=()=>{
 // Clip dùng chung (commit vào repo). Mỗi clip: {id, yt, start, end, player, note, angle, layout:{size,cb,ob,pocket}}
 // angle = góc cắt đo từ thế bi được dựng lại trên bàn 3D (layout), không phải con số ước đoán.
 const SEED_CLIPS = [];
-const CLIP_KEY='pooltrainer.clips.v1', CLIP_RANGE=7.5;   // hiện clip có góc lệch ≤ 7.5° so với góc hiện tại
+const CLIP_KEY='pooltrainer.clips.v1';
 const loadUserClips=()=>{try{return JSON.parse(localStorage.getItem(CLIP_KEY))||[]}catch{return[]}};
 const saveUserClips=a=>localStorage.setItem(CLIP_KEY,JSON.stringify(a));
 const allClips=()=>[...SEED_CLIPS.map(c=>({...c,seed:true})),...loadUserClips()];
@@ -949,32 +956,39 @@ function ytUrlTime(u){const m=String(u).match(/[?&#](?:t|start)=([0-9hms]+)/);if
 function parseTime(t){t=String(t||'').trim();if(!t)return null;if(/^\d+(\.\d+)?$/.test(t))return Math.round(+t);
   const p=t.split(':').map(Number);if(p.some(isNaN))return NaN;return p.reduce((a,x)=>a*60+x,0);}
 const fmtTime=s=>s==null?'':`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-const embedSrc=c=>`https://www.youtube-nocookie.com/embed/${c.yt}?autoplay=1&rel=0&playsinline=1&modestbranding=1${c.start!=null?'&start='+c.start:''}${c.end!=null?'&end='+c.end:''}`;
+const embedSrc=(c,mute=true)=>`https://www.youtube-nocookie.com/embed/${c.yt}?autoplay=1${mute?'&mute=1':''}&rel=0&playsinline=1&modestbranding=1${c.start!=null?'&start='+c.start:''}${c.end!=null?'&end='+c.end:''}`;
 const watchUrl=c=>`https://www.youtube.com/watch?v=${c.yt}${c.start?'&t='+c.start+'s':''}`;
-const SEARCH_Q={8:'straight in shot',7:'thick cut shot',6:'3/4 ball hit',5:'5/8 ball cut shot',4:'half ball hit cut shot',3:'3/8 ball cut shot',2:'quarter ball cut shot',1:'thin cut shot',0:'extreme thin cut shot'};
-let clipView={key:'',idx:0,playing:false,list:[]};
+// Bộ sưu tập cố định: mỗi mức chồng lấn (ô) gắn với clip có góc rơi vào mức đó
+const SLOT_OF = a => Math.round((1-Math.sin(clamp(a,0,89.9)*DEG))*8);
+const SLOT_ANGLE = n => n===0 ? 75 : Math.asin(1-n/8)/DEG;      // góc đại diện để dựng bàn khi bấm ô
+let clipView={key:'',idx:0,playing:false,list:[],slot:-1}, autoTimer=null;
+function renderSlots(cur){
+  const have=new Set(allClips().map(c=>SLOT_OF(c.angle)));
+  $('#clipSlots').innerHTML=FR.map(([n,lab])=>`<button class="slot${have.has(n)?' has':''}${n===cur?' cur':''}" data-n="${n}" title="${lab} bi · θ≈${SLOT_ANGLE(n).toFixed(0)}°${have.has(n)?'':' · chưa có clip'}">${n===8?'Full':n===0?'Mỏng':lab}<i></i></button>`).join('');
+  document.querySelectorAll('#clipSlots .slot').forEach(b=>b.onclick=()=>placeCut(SLOT_ANGLE(+b.dataset.n),curSide()));
+}
 function renderClips(g,hide){
   $('#clipCard').classList.toggle('hidden',hide);
   if(hide)return;
-  const th=g.theta/DEG;
+  const th=g.theta/DEG, slot=g.phys?Math.round(g.overlap*8):-1;
   $('#caTheta').textContent=g.phys?th.toFixed(1)+'°':'không hợp lệ (> 90°)';
-  const list=g.phys?allClips().map(c=>({...c,d:Math.abs(c.angle-th)})).filter(c=>c.d<=CLIP_RANGE).sort((a,b)=>a.d-b.d):[];
-  $('#clipBucket').textContent=g.phys?`~${th.toFixed(0)}° · ${list.length} clip`:'';
-  const key=list.map(c=>c.id).join(',')+'|'+(g.phys?Math.round(g.overlap*8):'x');
-  if(key===clipView.key){                       // giữ nguyên video đang phát khi kéo bi trong cùng dải góc
+  const list=g.phys?allClips().filter(c=>SLOT_OF(c.angle)===slot).map(c=>({...c,d:Math.abs(c.angle-th)})).sort((a,b)=>a.d-b.d):[];
+  const key=slot+'|'+list.map(c=>c.id).join(',');
+  if(key===clipView.key){                       // cùng ô: giữ nguyên video đang phát, chỉ cập nhật độ lệch
     const c=clipView.list[clipView.idx], el=$('#cDev'); if(c&&el) el.textContent=Math.abs(c.angle-th).toFixed(1);
     return;
   }
-  clipView={key,idx:0,playing:false,list};
-  drawClipBody(g);
+  clipView={key,idx:0,playing:false,list,slot};
+  renderSlots(slot); drawClipBody(g);
+  clearTimeout(autoTimer);
+  if(list.length&&$('#clipAuto').checked)       // tự phát (tắt tiếng) khi dừng ở ô mới
+    autoTimer=setTimeout(()=>{if(clipView.key===key&&!clipView.playing){clipView.playing=true;drawClipBody(geom());}},700);
 }
 function drawClipBody(g){
   const b=$('#clipBody'), {list,idx}=clipView;
-  if(!g.phys){b.innerHTML='<div class="empty">Góc cắt > 90° là phi vật lý, nên không có clip mẫu.</div>';return;}
+  if(!g.phys){b.innerHTML='<div class="empty">Góc cắt > 90° là phi vật lý, nên không có clip.</div>';return;}
   if(!list.length){
-    const n=Math.round(g.overlap*8), q=encodeURIComponent('pro pool '+SEARCH_Q[n]+' slow motion');
-    b.innerHTML=`<div class="empty">Chưa có clip cho dải góc <b>${(g.theta/DEG).toFixed(0)}° ± ${CLIP_RANGE}°</b> (${fracLabel(g.overlap)} bi).<br>
-      <a href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">🔎 Tìm cú ${esc(fracLabel(g.overlap))} bi trên YouTube</a>, rồi dựng lại thế bi trên bàn và bấm <b>+ Thêm clip</b> bên dưới.</div>`;
+    b.innerHTML=`<div class="empty">Mức <b>${esc(fracLabel(g.overlap))} bi</b> (θ ≈ ${SLOT_ANGLE(Math.round(g.overlap*8)).toFixed(0)}°) chưa có clip.<br><span class="mut">Các ô có chấm xanh ở trên là mức đã có clip. Bấm vào ô để dựng góc đó.</span></div>`;
     return;
   }
   const c=list[idx];
@@ -982,20 +996,22 @@ function drawClipBody(g){
     <div class="vid" id="clipVid">${clipView.playing?`<iframe src="${embedSrc(c)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`:
       `<img src="https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg" alt=""><div class="play"><span>▶</span></div><div class="tag">${fmtTime(c.start)||'0:00'}${c.end!=null?' – '+fmtTime(c.end):''}</div>`}</div>
     <div class="clipMeta"><b>${esc(c.player)||'Cơ thủ'}</b>${c.note?` <span class="mut">· ${esc(c.note)}</span>`:''}</div>
-    <div style="margin-bottom:8px"><span class="badge">θ trong clip ${c.angle.toFixed(1)}°</span><span class="mut" style="font-size:12px">lệch <span id="cDev">${Math.abs(c.angle-g.theta/DEG).toFixed(1)}</span>° so với thế bi hiện tại${c.seed?'':' · clip của bạn'}</span></div>
+    <div style="margin-bottom:8px"><span class="badge">θ trong clip ${c.angle.toFixed(1)}°</span><span class="mut" style="font-size:12px">lệch <span id="cDev">${Math.abs(c.angle-g.theta/DEG).toFixed(1)}</span>° so với thế bi trên bàn</span></div>
     <div class="clipNav">
-      <button class="chip" id="cPrev" ${list.length<2?'disabled':''}>◀</button><span class="mut" style="font-size:12px">${idx+1}/${list.length}</span><button class="chip" id="cNext" ${list.length<2?'disabled':''}>▶</button>
+      ${list.length>1?`<button class="chip" id="cPrev">◀</button><span class="mut" style="font-size:12px">${idx+1}/${list.length}</span><button class="chip" id="cNext">▶</button>`:''}
       ${c.layout?'<button class="chip" id="cLayout" title="Đặt bi giống thế bi trong clip">📐 Dựng thế bi</button>':''}
-      <button class="chip" id="cBig" title="Xem lớn">⤢</button>
+      <button class="chip" id="cReplay" title="Xem lại">↻</button>
+      <button class="chip" id="cBig" title="Xem lớn, có tiếng">⤢</button>
       <a class="chip" href="${watchUrl(c)}" target="_blank" rel="noopener" style="text-decoration:none">YouTube ↗</a>
       ${c.seed?'':'<button class="chip" id="cDel" title="Xoá clip này">🗑</button>'}
     </div>`;
   $('#clipVid').onclick=()=>{if(!clipView.playing){clipView.playing=true;drawClipBody(geom());}};
-  const go=d=>{clipView.idx=(idx+d+list.length)%list.length;clipView.playing=false;drawClipBody(geom());};
+  const go=d=>{clipView.idx=(idx+d+list.length)%list.length;clipView.playing=true;drawClipBody(geom());};
   if($('#cPrev'))$('#cPrev').onclick=()=>go(-1);
   if($('#cNext'))$('#cNext').onclick=()=>go(1);
-  $('#cBig').onclick=()=>{clipView.playing=false;drawClipBody(geom());$('#vmTitle').textContent=`${c.player||'Cơ thủ'} · θ ${c.angle.toFixed(1)}°`;
-    $('#vmFrame').innerHTML=`<iframe src="${embedSrc(c)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`;$('#vidModal').classList.add('open');};
+  $('#cReplay').onclick=()=>{clipView.playing=true;drawClipBody(geom());};
+  $('#cBig').onclick=()=>{clipView.playing=false;drawClipBody(geom());$('#vmTitle').textContent=`${c.player||'Cơ thủ'} · θ ${c.angle.toFixed(1)}° · ${fracLabel(1-Math.sin(c.angle*DEG))} bi`;
+    $('#vmFrame').innerHTML=`<iframe src="${embedSrc(c,false)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`;$('#vidModal').classList.add('open');};
   if($('#cLayout'))$('#cLayout').onclick=()=>{const L=c.layout;const sizeChanged=L.size&&L.size!==state.size;if(L.size)state.size=L.size;
     state.cb={...L.cb};state.ob={...L.ob};state.pocket=L.pocket;if(sizeChanged)rebuildTable();else update();};
   if($('#cDel'))$('#cDel').onclick=()=>{saveUserClips(loadUserClips().filter(x=>x.id!==c.id));clipView.key='';update();};
