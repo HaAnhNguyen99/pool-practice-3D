@@ -1050,7 +1050,7 @@ function wirePlayer(root,c,{autoplay=false,onBig=null}={}){
   const setRate=r=>{clipView.rate=r;v.defaultPlaybackRate=r;v.playbackRate=r;btn('rate').textContent=rateLbl(r);};
   setRate(clipView.rate||1);
   const toggle=()=>v.paused?v.play().catch(()=>{}):v.pause();
-  const step=d=>{v.pause();v.currentTime=clamp(v.currentTime+d/24,0,v.duration||0);};
+  const step=d=>{v.pause();v.currentTime=clamp(v.currentTime+d/(c.fps||25),0,v.duration||0);};
   v.onplay=()=>{pv.classList.add('playing');btn('play').textContent='❚❚';clipView.playing=true;};
   v.onpause=()=>{pv.classList.remove('playing');btn('play').textContent='▶';};
   v.onloadedmetadata=v.ontimeupdate=()=>{const d=v.duration||0;if(!seek.matches(':active'))seek.value=d?Math.round(v.currentTime/d*1000):0;time.textContent=`${fmtSec(v.currentTime)} / ${fmtSec(d)}`;};

@@ -18,3 +18,6 @@ class Img:
         s.w,s.h,s.px=load(path)
     def get(s,x,y):
         o=(y*s.w+x)*3; p=s.px; return p[o],p[o+1],p[o+2]
+    @classmethod
+    def from_raw(cls, w, h, data):
+        o = cls.__new__(cls); o.w, o.h, o.px = w, h, data; return o

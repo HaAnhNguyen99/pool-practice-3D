@@ -5,3 +5,6 @@ clips/
 # Python
 __pycache__/
 *.pyc
+
+# Kết quả shotscan (ảnh cắt từ video thi đấu)
+scan_out/

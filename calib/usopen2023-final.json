@@ -1,5 +1,5 @@
 {
- "name": "US Open Pool Championship 2023 – FINAL, Sky Sports overhead/end camera",
+ "name": "US Open Pool Championship 2023 â€“ FINAL, Sky Sports overhead/end camera",
  "source": "training clip 1.mp4 (cut from YTSave ... IP-wATw-cus ... Gorst vs Ko Ping Chung ... 1080p.mp4)",
  "image_size": [
   1920,
@@ -65,7 +65,7 @@
  },
  "fit_rms_px": 0.74,
  "validation": {
-  "head_spot": "cloth dot at px (960.3,738.8) projects to (25,25) – the dot pattern centre (960.8,727.6) is NOT the head spot (earlier wrong assumption, cost 2in at near end)",
+  "head_spot": "cloth dot at px (960.3,738.8) projects to (25,25) â€“ the dot pattern centre (960.8,727.6) is NOT the head spot (earlier wrong assumption, cost 2in at near end)",
   "7_ball_frozen_left_rail": "y=1.08 (expected 1.125)",
   "8_ball_near_rail": "x=1.57 (half hidden by near cushion)",
   "ball_radius_px": "observed vs predicted within 0.5px for coloured balls",
