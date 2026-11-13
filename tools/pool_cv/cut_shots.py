@@ -22,7 +22,12 @@ def event_name(video):
     b = os.path.splitext(os.path.basename(video))[0]
     b = re.sub(r'^YTSave\.to_YouTube_Media_[A-Za-z0-9_-]{11}_', '', b)
     b = re.sub(r'_\d{3}_\d{3,4}p$', '', b)
-    return b.replace('-', ' ').strip()
+    b = b.replace('-', ' ').strip()
+    # "FINAL A vs B 2023 US Open Pool Championship" -> "US Open Pool Championship 2023 · Chung kết"
+    m = re.match(r'^(?:(FINAL|SEMI ?FINAL|QUARTER ?FINAL)\s+)?.+? vs .+? ((?:19|20)\d\d) (.+)$', b, re.I)
+    if not m: return b
+    rnd = {'FINAL': 'Chung kết', 'SEMIFINAL': 'Bán kết', 'QUARTERFINAL': 'Tứ kết'}.get((m.group(1) or '').upper().replace(' ', ''), '')
+    return f'{m.group(3)} {m.group(2)}' + (f' · {rnd}' if rnd else '')
 
 def write_js(entries):
     js = ('// SINH TỰ ĐỘNG từ clips.json bởi tools/pool_cv/cut_shots.py — sửa clips.json rồi chạy lại cut_shots.py.\n'
@@ -54,8 +59,8 @@ def main():
                         os.path.join(CLIPS, mp4)], check=True)
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f"{s['t_pre']:.3f}", '-i', s['video'], '-frames:v', '1', '-vf', 'scale=-2:720',
                         '-q:v', '3', os.path.join(CLIPS, jpg)], check=True)
-        e = {'id': s['id'], 'file': mp4, 'poster': jpg, 'player': a.player,
-             'note': f"{event_name(s['video'])} · bi {COLOR_VI.get(s['ob_color'], s['ob_color'])} vào lỗ {POCKET_VI[s['pocket']]}",
+        e = {'id': s['id'], 'file': mp4, 'poster': jpg, 'player': a.player, 'event': event_name(s['video']),
+             'note': f"Bi {COLOR_VI.get(s['ob_color'], s['ob_color'])} vào lỗ {POCKET_VI[s['pocket']]}",
              'angle': s['angle'], 'fps': s['fps'],
              'layout': {'size': 9, 'cb': {'x': s['cb'][0], 'y': s['cb'][1]}, 'ob': {'x': s['ob'][0], 'y': s['ob'][1]}, 'pocket': s['pocket']},
              'src': {'video': os.path.basename(s['video']), 't': s['clip'], 'measured_at': s['t_pre'], 'confidence': s['confidence'], 'auto': True}}
