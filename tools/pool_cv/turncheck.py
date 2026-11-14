@@ -49,6 +49,7 @@ class ArrowModel:
     """Bảng điểm có mũi tên trắng trên nền đỏ ở vị trí cố định (Premier League Pool 2024): đọc trực tiếp, không cần mẫu.
     Toạ độ trong khung 1280x720; dải box, các cửa sổ tính trong dải."""
     box = (520, 600, 240, 40)
+    REFR = (70, 150)                      # độ sáng xám của nền thanh (đỏ)
     WIN = {'L': (18, 31), 'R': (204, 217)}; REF = {'L': (6, 15), 'R': (222, 230)}; ROWS = (12, 30)
     def __init__(self, left, right): self.mean = {left: None, right: None}; self.side = {'L': left, 'R': right}
     def feat(self, s): return s
@@ -57,11 +58,32 @@ class ArrowModel:
         return sum(1 for p in v if p > 200)/len(v), sum(v)/len(v)
     def read(self, s):
         refs = [self._m(s, *self.REF[k])[1] for k in 'LR']
-        if not all(70 < r < 150 for r in refs): return None            # không thấy thanh đỏ: bảng điểm bị ẩn
+        if not all(self.REFR[0] < r < self.REFR[1] for r in refs): return None   # không thấy thanh màu: bảng điểm bị ẩn
         wl, wr = self._m(s, *self.WIN['L'])[0], self._m(s, *self.WIN['R'])[0]
         if max(wl, wr) < 0.25: return None
         k = 'L' if wl > wr else 'R'
         return self.side[k], abs(wl-wr)*100, 0
+
+class ArrowModel2023(ArrowModel):
+    """Premier League Pool 2023: cùng kiểu thanh đỏ nhưng thấp hơn ~20 px, mũi tên sát ô 'RACE TO'."""
+    box = (510, 620, 260, 44)
+    WIN = {'L': (36, 50), 'R': (209, 224)}; REF = {'L': (23, 34), 'R': (227, 236)}; ROWS = (14, 34)
+
+class ArrowModelWPC(ArrowModel):
+    """World Pool Championship (WNT, Jeddah): thanh xanh tím đậm, mũi tên trắng hai bên ô 'Race to'."""
+    box = (500, 646, 260, 40)
+    WIN = {'L': (47, 62), 'R': (199, 214)}; REF = {'L': (30, 44), 'R': (217, 232)}; ROWS = (10, 28); REFR = (32, 60)
+
+# Tên hai cơ thủ theo vị trí trên bảng điểm (trái, phải) khi khác thứ tự trong tên file.
+BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening')}
+
+def arrow_model(video):
+    b = os.path.basename(video)
+    names = next((v for k, v in BOARD_PLAYERS.items() if k in b), None) or players_of(video)
+    if not names: return None
+    if 'WORLD-PO' in b: return ArrowModelWPC(*names)
+    if 'Premier League' in b.replace('-', ' '): return (ArrowModel2023 if '2023' in b else ArrowModel)(*names)
+    return None
 
 class Model:
     box = (BX, BY, BW, BH)
@@ -74,6 +96,7 @@ class Model:
         self.mean = {p: [sum(c)/len(vs) for c in zip(*vs)] for p, vs in cls.items()}
         a, b = list(self.mean)
         self.mask = [i for i, (x, y) in enumerate(zip(self.mean[a], self.mean[b])) if abs(x-y) > 60]
+        if not self.mask: raise ValueError('mẫu hai cơ thủ không khác nhau (bảng điểm không ở vùng này)')
         # khoảng cách của chính các mẫu tới mẫu trung bình đúng lớp: dùng làm ngưỡng "có bảng điểm"
         own = [self.dist(v, self.mean[p]) for p, v in samples]
         self.present = statistics.median(own) * 2.5 + 10
@@ -94,7 +117,12 @@ def build_models():
         if not v or not e.get('player') or not e.get('poster'): continue
         s = poster_strip(os.path.join(CLIPS, e['poster']))
         if s: by.setdefault(v, []).append((e['player'], arrow_px(s)))
-    return {v: Model(S) for v, S in by.items() if len({p for p, _ in S}) == 2}
+    out = {}
+    for v, S in by.items():
+        if len({p for p, _ in S}) != 2: continue
+        try: out[v] = Model(S)
+        except ValueError: pass                                         # giải khác (vd WPA 2025): không dùng mẫu WNT
+    return out
 
 def score_changed(a, b, box):
     x0, x1 = box
@@ -171,10 +199,10 @@ def main():
         for s in shots:
             if s.get('manual'): continue                                 # đã soát tay: không ghi đè
             m = models.get(os.path.basename(s['video']))
-            if not m and 'Premier League' in s['video'] and players_of(s['video']):
-                m = models[os.path.basename(s['video'])] = ArrowModel(*players_of(s['video']))
+            if not m and arrow_model(s['video']):
+                m = models[os.path.basename(s['video'])] = arrow_model(s['video'])
             if not m: s['turn'] = {'verdict': 'unknown', 'reason': 'chưa có mẫu bảng điểm cho trận này'}; continue
-            s['turn'] = check(s, m, players_of(s['video']), next_stroke(sig, s['t_post']) if sig else None)
+            s['turn'] = check(s, m, list(m.side.values()) if isinstance(m, ArrowModel) else players_of(s['video']), next_stroke(sig, s['t_post']) if sig else None)
             print(f"{s['id']}  [{s['confidence']:6}] {s['turn']['verdict']:7} {s['turn'].get('shooter','')}: {s['turn']['reason']}", flush=True)
         json.dump(shots, open(f, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 

@@ -21,7 +21,8 @@ import shotscan as S
 import tablefind as tf
 from turncheck import load_signals
 
-# vùng tỉ số (khung 1920x1080): x,y,w,h và hai hàng (y tương đối) của hai cơ thủ, theo thứ tự trong tiêu đề "A vs B"
+# vùng tỉ số (khung 1920x1080): x,y,w,h và hai hàng (y tương đối) của hai cơ thủ, theo thứ tự trong tiêu đề "A vs B".
+# Trường 'board' trong file hiệu chỉnh (cùng dạng) được ưu tiên hơn bảng này.
 BOARDS = {'wpa 10 ball 2025': {'box': (220, 940, 140, 62), 'rows': [(6, 24), (40, 58)], 'white': 165}}
 NAME_FIX = {'Dương Quoc Hoang': 'Dương Quốc Hoàng'}
 RACK_WIN = 40          # tỉ số phải đổi trong chừng này giây sau khung trước cú đánh (gồm cả lúc ngắm, đồng hồ 30 s)
@@ -33,9 +34,10 @@ def board_of(video):
 
 def players(video):
     b = os.path.splitext(os.path.basename(video))[0]
+    if ' vs ' not in b: b = b.replace('-', ' ')                      # tên file dạng "Ko-Ping-Chung-vs-Alex-Kazakis-CHUNG-KẾT-..."
     if ' vs ' not in b: return None
     a, c = b.split(' vs ', 1)
-    c = re.sub(r'\s+(last \d+|round of \d+|quarter|semi|final|-).*$', '', c, flags=re.I).strip()
+    c = re.sub(r'\s+(last \d+|round of \d+|quarter|semi|final|chung kết|bán kết|tứ kết|predator|wpa|-).*$', '', c, flags=re.I).strip()
     return [NAME_FIX.get(a.strip(), a.strip()), NAME_FIX.get(c, c)]
 
 def board_frames(video, cfg, t0, dur, fps=1.0):
@@ -75,10 +77,10 @@ def full_balls(video, cal, t):
     im = S.grab(video, t)
     if not im: return None
     sim = S.grab(video, t, S.SW, S.SH)
-    if not S.Scanner(cal['camera']).overhead(sim): return None        # không phải camera trên cao
+    if not S.Scanner(cal['camera'], cal.get('rail_ref')).overhead(sim): return None   # không phải camera trên cao
     return S.detect_full_img(im, cal)
 
-def is_cue(b, s): return min(b['rgb']) > 130 or S._d(b['table'], s['cb']) < 3      # bi cái có thể dính tay / đầu cơ
+def is_cue(b, s): return S.plain_white(b) or S._d(b['table'], s['cb']) < 3      # bi cái có thể dính tay / đầu cơ
 
 def moved_before(lay, s, t_end):
     """Có thế bi đứng yên nào (sau cú đánh, trước t_end) mà bi mục tiêu nằm ở chỗ khác không -> bi chưa vào."""
@@ -112,11 +114,11 @@ def check(s, cal, cfg, names, sig, lay):
     posts = [(tp, p) for tp, p in posts if p]
     if not posts: return {'verdict': 'unknown', 'reason': 'không có khung trên cao sau cú đánh'}, col
     # khung khớp nhất: bi cái có mặt, số bi gần pre-1 nhất (khung khác có thể bị người che)
-    tp, post = min(posts, key=lambda q: (not any(is_cue(b, s) or min(b['rgb']) > 130 for b in q[1]), abs(len(q[1])-(len(pre)-1))))
+    tp, post = min(posts, key=lambda q: (not any(is_cue(b, s) or S.plain_white(b) for b in q[1]), abs(len(q[1])-(len(pre)-1))))
     if sum(1 for _, p in posts if any(S._d(b['table'], obb['table']) < 1.5 for b in p)) > len(posts)/2:
         return {'verdict': 'reject', 'reason': f'bi mục tiêu vẫn nằm chỗ cũ ({fmt(tp)})'}, col
     if any(S._d(b['table'], obb['table']) < 1.5 for b in post): return {'verdict': 'unknown', 'reason': f'chỗ bi mục tiêu chưa trống ({fmt(tp)})'}, col
-    if len(post) != len(pre)-1 or not any(min(b['rgb']) > 130 for b in post):
+    if len(post) != len(pre)-1 or not any(S.plain_white(b) for b in post):
         return {'verdict': 'unknown', 'reason': f'số bi {len(pre)} -> {len(post)} ({fmt(tp)})'}, col
     if score_change(s['video'], cfg, s['t_pre']-2, tp+1):
         return {'verdict': 'unknown', 'reason': 'tỉ số đổi giữa chừng'}, col
@@ -128,11 +130,11 @@ def main():
     for f in sys.argv[1:]:
         shots = json.load(open(f, encoding='utf-8'))
         d = os.path.dirname(os.path.abspath(f))
-        cal = json.load(open(os.path.join(d, 'calib.json'), encoding='utf-8')); tf.set_cloth(cal.get('cloth'))
+        cal = json.load(open(os.path.join(d, 'calib.json'), encoding='utf-8')); S.set_view(cal)
         sig = load_signals(d); lay = S.stable_layouts(sig)
         for s in shots:
             if s.get('manual'): continue                                 # đã soát tay: không ghi đè
-            cfg = board_of(s['video']); names = players(s['video'])
+            cfg = cal.get('board') or board_of(s['video']); names = players(s['video'])      # vùng tỉ số: file hiệu chỉnh hoặc BOARDS
             if not cfg or not names: s['turn'] = {'verdict': 'unknown', 'reason': 'chưa có vùng bảng điểm cho trận này'}; continue
             s['turn'], col = check(s, cal, cfg, names, sig, lay)
             if col and col != s['ob_color']: s['turn']['ob_color_scan'] = s['ob_color']; s['ob_color'] = col

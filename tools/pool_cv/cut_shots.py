@@ -4,6 +4,7 @@ usage:
   python cut_shots.py path/to/shots.json --ids ID1,ID2      # cắt đúng các cú này
   python cut_shots.py path/to/shots.json --min-conf high    # cắt mọi cú có độ tin cậy >= high (high|medium|low)
   python cut_shots.py ... --player "Fedor Gorst"            # ghi tên cơ thủ (tool không tự nhận ra người đánh)
+  python cut_shots.py ... --event "WPA 10-Ball World Championship 2025"   # tên giải khi tên file không đủ thông tin
 
 clips/clips.json là nguồn dữ liệu; clips/clips.js được sinh lại từ nó (index.html đọc clips.js).
 Chạy lại không tạo trùng: clip cùng id sẽ được thay thế."""
@@ -40,7 +41,7 @@ def write_js(entries):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('shots')
-    ap.add_argument('--ids'); ap.add_argument('--min-conf', choices=list(RANK)); ap.add_argument('--player', default='')
+    ap.add_argument('--ids'); ap.add_argument('--min-conf', choices=list(RANK)); ap.add_argument('--player', default=''); ap.add_argument('--event', default='')
     ap.add_argument('--force', action='store_true', help='cắt cả cú bị turncheck loại'); ap.add_argument('--verified', action='store_true', help='chỉ cắt cú turncheck xác nhận vào lỗ')
     ap.add_argument('--crf', default='22'); ap.add_argument('--clips-dir', help='mặc định: thư mục clips/ của dự án')
     a = ap.parse_args()
@@ -70,7 +71,7 @@ def main():
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f"{s['t_pre']:.3f}", '-i', s['video'], '-frames:v', '1', '-vf', 'scale=-2:720',
                         '-q:v', '3', os.path.join(CLIPS, jpg)], check=True)
         who = a.player or (s.get('turn') or {}).get('shooter', '')      # turncheck đọc người đánh từ bảng điểm
-        e = {'id': s['id'], 'file': mp4, 'poster': jpg, 'player': who, 'event': event_name(s['video']),
+        e = {'id': s['id'], 'file': mp4, 'poster': jpg, 'player': who, 'event': a.event or event_name(s['video']),
              'note': (f"Bi {s['ball']}" if s.get('ball') else f"Bi {COLOR_VI.get(s['ob_color'], s['ob_color'])}") + f" vào lỗ {POCKET_VI[s['pocket']]}",
              'angle': s['angle'], 'fps': s['fps'],
              'layout': {'size': 9, 'cb': {'x': s['cb'][0], 'y': s['cb'][1]}, 'ob': {'x': s['ob'][0], 'y': s['ob'][1]}, 'pocket': s['pocket']},

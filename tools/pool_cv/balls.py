@@ -102,7 +102,8 @@ def detect(path, cal):
                     if inb(xe, y, -0.2): pts.append((xe, y))
         pts += [(x, ymin-0.5) for x in rows[ymin] if inb(x, ymin, -0.2)]
         if len(pts) < 12: continue
-        cx, cy, r = kasa(pts)
+        try: cx, cy, r = kasa(pts)
+        except ZeroDivisionError: continue                 # điểm mép thẳng hàng (vệt sáng, mép tay áo)
         if CAM:
             for _ in range(3):
                 tx, ty = ray_plane(CAM, (cx, cy), -R); _, zc = project(CAM, (tx, ty, -R)); rp = CAM[6]*R/zc
@@ -119,7 +120,11 @@ def detect(path, cal):
         cols = [im.get(int(cx+dx), int(cy+dy)) for dx in range(-rr, rr+1, 2) for dy in range(-rr, rr+1, 2) if dx*dx+dy*dy < rr*rr]
         mc = [round(sum(c[i] for c in cols)/len(cols)) for i in range(3)]
         bright = sum(1 for c in cols if min(c) > 200)/len(cols)
-        out.append({'px': [round(cx, 1), round(cy, 1)], 'r_px': round(r, 1), 'r_exp': round(rp if rp else R*pxy, 1),
+        rn = rp if rp else r; ri = int(0.9*rn)+1
+        ring = [im.get(int(cx)+dx, int(cy)+dy) for dx in range(-ri, ri+1) for dy in range(-ri, ri+1)
+                if (int(cx)+dx+0.5-cx)**2+(int(cy)+dy+0.5-cy)**2 <= (0.9*rn)**2]
+        nw = sum(1 for c in ring if min(c) < 150 or max(c)-min(c) > 70)/max(1, len(ring))   # bi sọc: >= 0.1, bi cái ~0.02
+        out.append({'px': [round(cx, 1), round(cy, 1)], 'nw': round(nw, 3), 'r_px': round(r, 1), 'r_exp': round(rp if rp else R*pxy, 1),
                     'elev': round(math.degrees(math.asin(min(1, pxx/pxy))), 1), 'n': len(comp),
                     'rgb': mc, 'white_frac': round(bright, 2), 'table': [round(tx, 2), round(ty, 2)]})
     out.sort(key=lambda b: b['table'][0])

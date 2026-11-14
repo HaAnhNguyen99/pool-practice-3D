@@ -22,6 +22,27 @@ from geom import theta as geom_theta, pockets as aim_points
 R = 1.125
 SW, SH, F = 640, 360, 3            # khung quét nhanh = 1920x1080 / 3
 POCKETS = [(0, 0), (50, 0), (100, 0), (0, 50), (50, 50), (100, 50)]
+VIEW = 'end'        # 'top': camera nhìn thẳng từ trên xuống (trường 'view' của file hiệu chỉnh)
+NW_SCAN, NW_FULL = 0.07, 0.08   # bi sọc quay phần trắng lên trông như bi cái: tỉ lệ điểm ảnh không trắng trong đĩa 0.9r lớn hơn
+
+def set_view(cal):
+    global VIEW
+    VIEW = cal.get('view', 'end'); tf.set_cloth(cal.get('cloth'))
+
+def non_white(im, cx, cy, r):
+    """Tỉ lệ điểm ảnh không trắng trong đĩa 0.9r: bi cái ~0.02 (vài chấm), bi sọc (kể cả khi phần trắng quay lên) >= 0.1."""
+    rr = 0.9*r; ri = int(rr)+1; tot = nw = 0
+    for dy in range(-ri, ri+1):
+        for dx in range(-ri, ri+1):
+            x, y = int(cx)+dx, int(cy)+dy
+            if (x+0.5-cx)**2+(y+0.5-cy)**2 > rr*rr or not (0 <= x < im.w and 0 <= y < im.h): continue
+            c = im.get(x, y); tot += 1
+            if min(c) < 150 or max(c)-min(c) > 70: nw += 1
+    return nw/tot if tot else 1.0
+
+def plain_white(b):
+    """Bi trắng có thể là bi cái: với camera trên cao loại bi sọc (b['nw'] từ balls.detect)."""
+    return min(b['rgb']) > 130 and (VIEW != 'top' or b.get('nw', 0) < NW_FULL)
 
 # ------------------------------------------------------------------ ffmpeg
 def probe(video):
@@ -151,7 +172,7 @@ class Scanner:
             if not 0.25*core <= len(comp) <= 3.2*core: continue
             xs = [j % w for j in comp]; ys = [j//w for j in comp]
             if max(xs)-min(xs) > 2.6*r or max(ys)-min(ys) > 2.6*r: continue
-            cy -= 0.3*r                                        # lõi bị bóng đổ kéo xuống dưới
+            if VIEW != 'top': cy -= 0.3*r                      # camera đầu bàn: lõi bị bóng đổ kéo xuống dưới
             ri = int(r)+1
             disk = [im.get(int(cx)+dx, int(cy)+dy) for dx in range(-ri, ri+1) for dy in range(-ri, ri+1)
                     if dx*dx+dy*dy <= r*r and 0 <= int(cx)+dx < SW and 0 <= int(cy)+dy < SH]
@@ -161,13 +182,18 @@ class Scanner:
             if len(chrom) >= 0.3*len(disk): rgb = tuple(statistics.median(c[q] for c in chrom) for q in range(3))
             else: rgb = tuple(statistics.median(c[q] for c in disk) for q in range(3))
             u, v = ray_plane(s.cam, (cx*F+1, cy*F+1), -R)
-            out.append([round(u, 2), round(v, 2), 'white' if whitish >= 0.2 else color_class(rgb), [round(cx*F), round(cy*F)]])
+            lab = 'white' if whitish >= 0.2 else color_class(rgb)
+            if lab == 'white' and VIEW == 'top' and non_white(im, cx+0.5, cy+0.5, r) >= NW_SCAN:  # bi sọc quay phần trắng lên
+                lab = color_class(tuple(statistics.median(c[q] for c in chrom) for q in range(3))) if chrom else 'stripe'
+                if lab in ('white', 'grey'): lab = 'stripe'
+            out.append([round(u, 2), round(v, 2), lab, [round(cx*F), round(cy*F)]])
         return out
 
 def color_class(c):
     r, g, b = c; mx, mn = max(c), min(c); l = (r+g+b)/3
     if mn > 140 and mx-mn < 70: return 'white'
     if mx-mn <= 25: return 'black' if l < 75 else 'grey'
+    if tf.CLOTH and mx == b and g >= r-10 and l < 90: return 'black'     # nỉ xanh dương: bi đen bị ám xanh
     # hue
     if mx == r: hue = (60*((g-b)/(mx-mn))) % 360
     elif mx == g: hue = 60*((b-r)/(mx-mn))+120
@@ -175,7 +201,7 @@ def color_class(c):
     if hue < 15 or hue >= 330: return 'maroon' if l < 95 else 'red'
     if hue < 40: return 'maroon' if l < 90 else 'orange'
     if hue < 70: return 'yellow'
-    if hue < 170: return 'green'
+    if hue < (190 if tf.CLOTH else 170): return 'green'                     # nỉ xanh dương kéo bi xanh lá về phía lam
     if hue < 255: return 'blue'
     return 'purple'
 
@@ -385,7 +411,7 @@ def measure(video, cal, e, want=4):
         im = grab(video, t)
         if not im: continue
         bs = detect_full_img(im, cal)
-        cbs = [b for b in bs if min(b['rgb']) > 130 and _d(b['table'], e['cb']) < 5]
+        cbs = [b for b in bs if plain_white(b) and _d(b['table'], e['cb']) < 5]
         obs = [b for b in bs if _d(b['table'], e['ob']) < 4 and b not in cbs]
         if obs and not cbs and len(e['cb']) > 3:          # bi cái dính đầu cơ / tay: khớp bán kính cố định từ vị trí thô
             cbs = [refine_at(im, cal, e['cb'][3])]
@@ -450,9 +476,16 @@ def fmt(t): return f'{int(t//3600)}:{int(t%3600//60):02d}:{t%60:04.1f}' if t >= 
 def short_id(video):
     b = os.path.splitext(os.path.basename(video))[0]
     if 'Media_' in b: return b.split('Media_')[1][:11]
-    import unicodedata                                                  # tên file clip: chỉ ASCII (vd "Dương" -> "duong")
+    # video đã có clip trong thư viện: giữ tiền tố cũ (không đổi id/tên file clip đã cắt)
+    jf = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'clips', 'clips.json')
+    if os.path.exists(jf):
+        old = next((e['id'].rsplit('-', 1)[0] for e in json.load(open(jf, encoding='utf-8'))
+                    if (e.get('src') or {}).get('video') == os.path.basename(video) and (e.get('src') or {}).get('auto')), None)
+        if old: return old
+    import unicodedata, hashlib                                         # tên file clip: chỉ ASCII (vd "Dương" -> "duong")
+    h = hashlib.md5(os.path.basename(video).encode('utf-8')).hexdigest()[:4]   # nhiều trận cùng cơ thủ: 16 ký tự đầu trùng nhau
     b = unicodedata.normalize('NFKD', b.replace('đ', 'd').replace('Đ', 'D')).encode('ascii', 'ignore').decode()
-    return ''.join(ch for ch in b if ch.isalnum())[:16].lower()
+    return ''.join(ch for ch in b if ch.isalnum())[:16].lower() + h
 
 # ------------------------------------------------------------------ main
 def main():
@@ -469,7 +502,7 @@ def main():
     elif os.path.exists(cf): cal = json.load(open(cf, encoding='utf-8'))
     else:
         print('1) Hiệu chỉnh camera…'); cal = calibrate_video(video, dur); json.dump(cal, open(cf, 'w'), indent=1)
-    tf.set_cloth(cal.get('cloth'))                                   # nỉ màu (vd WPA 2025 xanh dương); None = nỉ xám
+    set_view(cal)                                                    # nỉ màu (vd WPA 2025 xanh dương), camera trên xuống
     print(f'   camera: {[round(v, 2) for v in cal["camera"]]}  rms {cal["fit_rms_px"]:.2f}px  ({len(cal.get("frames_used", [])) or "file có sẵn"} khung)')
     if 'rail_ref' not in cal and cal.get('frames_used'):
         cal['rail_ref'] = learn_rail(video, cal); json.dump(cal, open(cf, 'w'), indent=1)

@@ -101,8 +101,9 @@ def detect_lines(im, q):
     # near nose silhouette: first small brightness step going down near the bottom edge
     for i in range(8, 93, 1):
         t = i/100; b = _lerp(BL, BR, t); x = int(b[0]); y0 = int(b[1]-0.03*H)
+        if not (0 <= x < im.w and 0 <= y0 < im.h-1): continue
         base = sum(im.get(x, y0))
-        for y in range(y0+1, int(b[1]+0.03*H)):
+        for y in range(y0+1, min(im.h, int(b[1]+0.03*H))):                # bàn sát mép dưới ảnh
             if sum(im.get(x, y))-base >= 7: out['N'].append([x, y-0.5]); break
     lines = {}
     for k, vert in (('L', 1), ('R', 1), ('T', 0), ('FS', 0), ('N', 0)):

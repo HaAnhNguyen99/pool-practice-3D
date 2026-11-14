@@ -72,6 +72,26 @@ Bảng điểm WPA không có mũi tên lượt đánh, nên dùng `rackcheck.py
 
 Rà bằng hình trên trận Filler – Dương Quốc Hoàng: `rackcheck` cho 30 cú ok, trong đó 7 cú sai bị loại khi soát (còn 23). 5 cú do nhận nhầm bi cái hoặc bi mục tiêu. 1 cú có hai bi cùng biến mất. 1 cú vị trí đo không ổn định. Thêm 2 cú sai lỗ (lỗ theo dõi tự động). Vì vậy vẫn nên xem ảnh trước/sau của từng cú trước khi cắt.
 
+#### Camera nhìn thẳng từ trên xuống (trận Dương Quốc Hoàng – Aloysius Yapp)
+
+Một số trận WPA 2025 dùng camera treo thẳng trên bàn thay cho camera đầu bàn. File hiệu chỉnh `calib/wpa2025-10ball-top.json` có thêm các trường sau:
+- `view: "top"`
+- `rail_ref`: màu băng, để loại các camera khác cũng thấy nỉ xanh.
+- `board`: vùng tỉ số; bảng điểm có 5 cột set, so cả hàng.
+
+Hiệu chỉnh bằng cách khớp 4 đường mũi băng trên ảnh trung vị 7 khung (rms 0.44 px). Khi camera gần như vuông góc với mặt bàn thì Z và f không tách riêng được, nhưng ánh xạ mặt bàn vẫn đúng: kim cương trên 4 băng lệch ≤ 2 px. Hệ toạ độ: x=0 là băng ngắn bên trái ảnh, y=0 là băng dài phía trên.
+
+Khác biệt khi `view` là `top`:
+- **Không dịch tâm bi xuống** khi quét. Phép dịch đó chỉ dùng để bù bóng đổ ở camera đầu bàn.
+- **Phân biệt bi sọc với bi cái.** Nhìn từ trên xuống, bi 9 và bi 10 có lúc chỉ lộ phần trắng. Cách phân biệt là đếm tỉ lệ điểm ảnh không trắng trong đĩa 0.9r: bi cái khoảng 0.02 (vài chấm), bi sọc từ 0.12 trở lên. Ngưỡng là `NW_SCAN` khi quét và `NW_FULL` ở full-res (trường `nw` của `balls.detect`).
+- **Phân loại màu bi trên nỉ xanh dương** (khi có `cloth`): bi đen ám xanh vẫn ra "đen", và bi xanh lá không bị nhầm thành xanh dương.
+
+```
+python shotscan.py "../../Training clips/Dương Quốc Hoàng vs Aloysius Yapp - 2025.mp4" --calib ../../calib/wpa2025-10ball-top.json
+python rackcheck.py "../../scan_out/Dương Quốc Hoàng vs Aloysius Yapp - 2025/shots.json"
+python cut_shots.py "../../scan_out/Dương Quốc Hoàng vs Aloysius Yapp - 2025/shots.json" --ids ... --event "WPA 10-Ball World Championship 2025"
+```
+
 `clips/clips.json` là nguồn dữ liệu; `clips/clips.js` được sinh lại tự động, không sửa tay. Chạy lại không tạo trùng.
 
 Độ tin cậy:
