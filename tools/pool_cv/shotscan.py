@@ -394,6 +394,22 @@ def find_events(sig, layouts):
     return ev
 
 # ------------------------------------------------------------------ 4. đo chính xác
+def _segd(p, a, b):
+    ax, ay = b[0]-a[0], b[1]-a[1]; L2 = ax*ax+ay*ay
+    t = max(0, min(1, ((p[0]-a[0])*ax+(p[1]-a[1])*ay)/L2)) if L2 else 0
+    return math.hypot(p[0]-a[0]-t*ax, p[1]-a[1]-t*ay), t
+
+def blocked(cb, ob, pocket, balls):
+    """Bi khác nằm trên đường bi cái -> điểm chạm hoặc bi mục tiêu -> lỗ: cú này phải đánh băng / đánh vẩy, không phải đánh thẳng."""
+    A = aim_points()[pocket]; lp = _d(A, ob); u = ((A[0]-ob[0])/lp, (A[1]-ob[1])/lp); gb = (ob[0]-u[0]*2*R, ob[1]-u[1]*2*R)
+    out = []
+    for b in balls:
+        if _d(b, cb) < 2.5 or _d(b, ob) < 2.5: continue
+        for a, c in ((cb, gb), (ob, A)):
+            d, t = _segd(b, a, c)
+            if d < 2*R*0.9 and 0.05 < t < 0.98: out.append(b); break
+    return out
+
 def valid_pockets(cb, ob):
     out = []
     for k in range(6):
@@ -530,6 +546,9 @@ def main():
         clear = len(vp) == 1 or vp[1][1] > 70                      # lỗ khác đòi góc > 70°: gần như chắc chắn
         conf = 'high' if (tracked and m['still']) else ('medium' if (tracked or clear) else 'low')
         if m['spread'] > 0.5: conf = 'low'                           # các khung đo không khớp nhau
+        blk = blocked(cb, ob, pocket, e['A']['balls'])
+        if blk: conf = 'low'; notes.append('có bi chặn đường – có thể là cú đánh băng, kiểm tra kỹ')
+        elif th > 70: conf = 'low'; notes.append(f'góc cắt rất mỏng ({th:.0f}°) – kiểm tra có phải cú đánh băng không')
         if not m['still']: notes.append(f"chưa xác nhận bi đứng yên ({m['n_frames']} khung, lệch {m['spread']}\")")
         if e['note']: notes.append(e['note'])
         # khung cắt: biết lúc đánh -> quanh lúc đánh; không biết (đang chiếu cận cảnh) -> giữ tới khi bi rơi / thế mới hiện ra

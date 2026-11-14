@@ -74,14 +74,21 @@ class ArrowModelWPC(ArrowModel):
     box = (500, 646, 260, 40)
     WIN = {'L': (47, 62), 'R': (199, 214)}; REF = {'L': (30, 44), 'R': (217, 232)}; ROWS = (10, 28); REFR = (32, 60)
 
+class ArrowModelWPM(ArrowModelWPC):
+    """World Pool Masters 2024 (WNT): cùng kiểu thanh xanh tím với World Pool Championship nhưng cao hơn ~30 px."""
+    box = (510, 612, 260, 44)
+    WIN = {'L': (50, 64), 'R': (195, 209)}; REF = {'L': (32, 47), 'R': (212, 224)}; ROWS = (12, 34)
+
 # Tên hai cơ thủ theo vị trí trên bảng điểm (trái, phải) khi khác thứ tự trong tên file.
-BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening')}
+BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening'),
+                 'Joshua Filler vs Ko Pin Yi  Semi-Final _2024 World Pool Masters': ('Joshua Filler', 'Ko Pin Yi')}
 
 def arrow_model(video):
     b = os.path.basename(video)
     names = next((v for k, v in BOARD_PLAYERS.items() if k in b), None) or players_of(video)
     if not names: return None
     if 'WORLD-PO' in b: return ArrowModelWPC(*names)
+    if 'World Pool Masters' in b: return ArrowModelWPM(*names)
     if 'Premier League' in b.replace('-', ' '): return (ArrowModel2023 if '2023' in b else ArrowModel)(*names)
     return None
 

@@ -94,6 +94,12 @@ python cut_shots.py "../../scan_out/Dương Quốc Hoàng vs Aloysius Yapp - 202
 
 `clips/clips.json` là nguồn dữ liệu; `clips/clips.js` được sinh lại tự động, không sửa tay. Chạy lại không tạo trùng.
 
+Cú đánh băng dễ bị nhận nhầm thành cú chém mỏng, vì tool chỉ thấy bi cái và bi mục tiêu chứ không thấy đường lăn khi cú đánh diễn ra ngoài camera trên cao. Vì vậy `shotscan` hạ độ tin cậy xuống **thấp** và ghi chú khi:
+- có bi khác nằm trên đường bi cái tới điểm chạm, hoặc trên đường bi mục tiêu tới lỗ;
+- góc cắt trên 70°.
+
+Những cú này cần xem video trước khi cắt.
+
 Độ tin cậy:
 - **Cao:** lỗ theo dõi được và bi đứng yên.
 - **Vừa:** chỉ có một lỗ hợp lý.
