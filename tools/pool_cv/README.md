@@ -21,6 +21,57 @@ python cut_shots.py "../../scan_out/<video>/shots.json" --min-conf high --player
 python cut_shots.py "../../scan_out/<video>/shots.json" --ids ID1,ID2
 ```
 
+### Kiểm tra cú có thật sự vào lỗ (bảng điểm)
+
+```
+python turncheck.py "../../scan_out/<video>/shots.json"
+python cut_shots.py "../../scan_out/<video>/shots.json" --min-conf medium --verified
+```
+
+`turncheck.py` đọc mũi tên lượt đánh trên bảng điểm từ trước cú đánh tới lúc cú kế tiếp bắt đầu:
+- **ok:** vẫn lượt của người đánh. Bi vào lỗ, người đánh được đánh tiếp.
+- **reject:** trong 15 s sau cú đánh, lượt chuyển sang đối thủ. Nghĩa là trượt, đánh phòng thủ hoặc phạm lỗi.
+- **unknown:** không đọc được bảng điểm, cú kết thúc ván, hoặc lượt đổi quá muộn nên có thể do cú sau.
+
+Kết quả ghi vào trường `turn` của `shots.json`:
+- `cut_shots.py` luôn bỏ cú `reject`; dùng `--force` để vẫn cắt.
+- `--verified` chỉ cắt cú `ok`.
+- Tên cơ thủ lấy từ `turn.shooter`.
+
+Bảng điểm hỗ trợ:
+- **World Nineball Tour 2023** (US Open, European Open): học mẫu mũi tên từ poster các clip đã có tên.
+- **Premier League Pool 2024:** đọc trực tiếp mũi tên trắng trên thanh đỏ.
+
+Giải mới cần thêm toạ độ vùng bảng điểm.
+
+Clip bị loại được chuyển sang `clips/_rejected/`, ghi lý do trong `rejected.json`.
+
+### Premier League Pool 2024
+
+Bàn băng sáng. Bảng điểm đè lên băng gần, nên mép dưới phát hiện được là mép ngoài băng (x=−8) chứ không phải mũi băng. Camera đã kiểm chứng nằm ở `calib/premierleague2024.json`: tâm 2 lỗ giữa và lưới bàn khớp ảnh.
+
+```
+python shotscan.py "../../Training clips/Shane Van Boening vs Ko Pin Yi_2024 Premier League Pool.mp4" --calib ../../calib/premierleague2024.json
+```
+
+### WPA 10-Ball World Championship 2025
+
+Nỉ xanh dương, mặt băng cùng màu nỉ, không có vạch phấn foot string. Màu nỉ ghi trong trường `cloth` của file hiệu chỉnh; `shotscan` và `tablefind` đọc trường này. Camera đầu bàn ở xa (bi ≈ 11–17 px), nên khung quét nhanh dùng màu nền riêng cho từng hàng ảnh.
+
+Camera đo trên ảnh trung vị 6 khung, lưu ở `calib/wpa2025-10ball.json`. Kiểm chứng: các đường y=12.5/25/37.5 trùng 3 kim cương trên băng gần, đường x=50 đi qua 2 lỗ giữa.
+
+```
+python shotscan.py "../../Training clips/Joshua Filler vs Dương Quoc Hoang last 32 - wpa 10 ball 2025.mp4" --calib ../../calib/wpa2025-10ball.json
+python rackcheck.py "../../scan_out/<trận>/shots.json"
+python cut_shots.py "../../scan_out/<trận>/shots.json" --min-conf low --verified
+```
+
+Bảng điểm WPA không có mũi tên lượt đánh, nên dùng `rackcheck.py` thay cho `turncheck.py`:
+- **Cú cuối ván** (chỉ còn bi cái và bi 10): tỉ số của một cơ thủ phải tăng trong 40 s sau khung trước cú đánh, và bi 10 không được dừng ở chỗ khác trước đó. Hàng tỉ số tăng cho biết ai đánh.
+- **Cú giữa ván:** so khung full-res trước cú đánh với khung camera đầu bàn sau đó. Số bi phải giảm đúng 1 và chỗ cũ của bi mục tiêu phải trống. Cách này không biết ai đánh, nên tên cơ thủ để trống.
+
+Rà bằng hình trên trận Filler – Dương Quốc Hoàng: `rackcheck` cho 30 cú ok, trong đó 7 cú sai bị loại khi soát (còn 23). 5 cú do nhận nhầm bi cái hoặc bi mục tiêu. 1 cú có hai bi cùng biến mất. 1 cú vị trí đo không ổn định. Thêm 2 cú sai lỗ (lỗ theo dõi tự động). Vì vậy vẫn nên xem ảnh trước/sau của từng cú trước khi cắt.
+
 `clips/clips.json` là nguồn dữ liệu; `clips/clips.js` được sinh lại tự động, không sửa tay. Chạy lại không tạo trùng.
 
 Độ tin cậy:

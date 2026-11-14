@@ -12,7 +12,15 @@ from linefit import fit_lines
 
 S = 4  # sub-sampling step for the coarse pass
 
+CLOTH = None   # None: nỉ xám (WNT 2023); [r,g,b]: nỉ có màu (vd xanh dương WPA 2025), đặt bằng set_cloth()
+
+def set_cloth(rgb):
+    global CLOTH
+    CLOTH = list(rgb) if rgb else None
+
 def is_cloth(c):
+    if CLOTH:
+        return abs(c[0]-CLOTH[0])+abs(c[1]-CLOTH[1])+abs(c[2]-CLOTH[2]) < 90
     mx, mn = max(c), min(c); m = (c[0]+c[1]+c[2])/3
     return mx-mn < 32 and 105 < m < 225
 
@@ -99,6 +107,7 @@ def detect_lines(im, q):
     lines = {}
     for k, vert in (('L', 1), ('R', 1), ('T', 0), ('FS', 0), ('N', 0)):
         pts = [p for p in out[k] if p]
+        if k == 'FS' and CLOTH and (len(pts) < 8 or robust(pts, vert)[2] < 0.5*len(pts)): continue   # bàn nỉ màu không có vạch phấn
         if len(pts) < 8: return None
         try: a, b, n = robust(pts, vert)
         except ZeroDivisionError: return None
@@ -111,8 +120,8 @@ def fit_camera(lines, p0=None, hs=1.43, hf=0.0, hn=1.43):
     cons = [(ln('L'), [(x, 0, -hs) for x in range(8, 96, 8) if not 44 < x < 56]),
             (ln('R'), [(x, 50, -hs) for x in range(8, 96, 8) if not 44 < x < 56]),
             (ln('T'), [(100, y, -hf) for y in range(4, 48, 4)]),
-            (ln('FS'), [(75, y, 0) for y in range(4, 48, 4)]),
             (ln('N'), [(0, y, -hn) for y in range(4, 48, 4)])]
+    if 'FS' in lines: cons.append((ln('FS'), [(75, y, 0) for y in range(4, 48, 4)]))
     best = None
     for p in ([p0] if p0 else []) + [[-309, 25.7, -115, 0, 0.3, 0, 6128], [-250, 25, -100, 0, 0.35, 0, 5000], [-400, 25, -140, 0, 0.3, 0, 8000]]:
         try: q, cost, r = fit_lines(cons, p)

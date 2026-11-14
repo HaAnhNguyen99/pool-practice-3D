@@ -32,7 +32,7 @@ def probe(video):
 
 def grab(video, t, w=1920, h=1080):
     """Một khung RGB tại thời điểm t (giây)."""
-    vf = [] if (w, h) == (1920, 1080) else ['-vf', f'scale={w}:{h}']
+    vf = ['-vf', f'scale={w}:{h}']          # luôn co giãn: có video không đúng 1080 dòng (vd 1920x1068)
     o = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{max(0, t):.3f}', '-i', video, '-frames:v', '1', *vf,
                         '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], capture_output=True, check=True)
     if len(o.stdout) < w*h*3: return None
@@ -71,6 +71,7 @@ def calibrate_video(video, dur, n=40):
         if len(grp) > len(best): best = grp
     med = {}
     for k in ('L', 'R', 'T', 'FS', 'N'):
+        if any(k not in r[1] for r in best): continue           # FS có thể vắng (bàn nỉ màu)
         med[k] = {'form': best[0][1][k]['form'], 'a': statistics.median(r[1][k]['a'] for r in best),
                   'b': statistics.median(r[1][k]['b'] for r in best)}
     cam, rms = tf.fit_camera(med)
@@ -79,8 +80,8 @@ def calibrate_video(video, dur, n=40):
 
 # ------------------------------------------------------------------ 2. quét nhanh
 class Scanner:
-    def __init__(s, cam):
-        s.cam = cam
+    def __init__(s, cam, rail_ref=None):
+        s.cam = cam; s.rail_ref = rail_ref     # màu băng học từ khung hiệu chỉnh (bàn băng sáng); None -> băng tối
         sp = lambda P: tuple(v/F for v in project(cam, P)[0])
         s.bed_pts = [tuple(map(int, sp((x, y, 0)))) for x in range(8, 95, 7) for y in range(5, 46, 5)]
         s.rail_pts = [tuple(map(int, sp((x, y, -2.0)))) for x in range(10, 91, 8) for y in (-3.5, 53.5)]
@@ -102,20 +103,28 @@ class Scanner:
     def overhead(s, im):
         cl = [im.get(*p) for p in s.bed_pts if 0 <= p[0] < SW and 0 <= p[1] < SH]
         ok = [c for c in cl if tf.is_cloth(c)]
-        rail = [im.get(*p) for p in s.rail_pts if 0 <= p[0] < SW and 0 <= p[1] < SH]
-        dark = sum(1 for c in rail if sum(c) < 300)
-        if len(ok) < 0.55*len(cl) or dark < 0.6*len(rail): return None
+        if s.rail_ref:
+            rail = [(im.get(*p), r) for p, r in zip(s.rail_pts, s.rail_ref) if r and 0 <= p[0] < SW and 0 <= p[1] < SH]
+            good = sum(1 for c, r in rail if sum(abs(c[i]-r[i]) for i in range(3)) < 60)
+            if len(ok) < 0.55*len(cl) or good < 0.6*len(rail): return None
+        else:
+            rail = [im.get(*p) for p in s.rail_pts if 0 <= p[0] < SW and 0 <= p[1] < SH]
+            dark = sum(1 for c in rail if sum(c) < 300)
+            if len(ok) < 0.55*len(cl) or dark < 0.6*len(rail): return None
         return tuple(statistics.median(c[i] for c in ok) for i in range(3))
 
     def balls(s, im, ref, TH=40, k=2):
         w, h = s.w, s.y1-s.y0
         m = bytearray(w*h)
         for yy in range(h):
-            y = yy+s.y0; row = yy*w
+            y = yy+s.y0; row = yy*w; rr = ref
+            if tf.CLOTH:                       # nỉ màu: độ sáng đổi theo chiều sâu -> màu nền riêng từng hàng
+                cs = [im.get(xx+s.x0, y) for xx in range(0, w, 5) if s.inbed[row+xx]]
+                if len(cs) >= 9: rr = tuple(sorted(c[i] for c in cs)[len(cs)//2] for i in range(3))
             for xx in range(w):
                 if s.inbed[row+xx]:
                     c = im.get(xx+s.x0, y)
-                    if abs(c[0]-ref[0])+abs(c[1]-ref[1])+abs(c[2]-ref[2]) > TH: m[row+xx] = 1
+                    if abs(c[0]-rr[0])+abs(c[1]-rr[1])+abs(c[2]-rr[2]) > TH: m[row+xx] = 1
         # co (erosion) bằng cửa sổ vuông (2k+1): bỏ cây cơ, mép bóng
         e = bytearray(w*h); W2 = 2*k+1
         tmp = bytearray(w*h)
@@ -170,9 +179,24 @@ def color_class(c):
     if hue < 255: return 'blue'
     return 'purple'
 
-def scan(video, dur, cam, outdir, fps, chunk=600):
-    sc = Scanner(cam); sd = os.path.join(outdir, 'signals'); os.makedirs(sd, exist_ok=True)
+def learn_rail(video, cal):
+    """Bàn có băng sáng (vd Premier League): kiểm tra 'băng tối' không phân biệt được camera đầu bàn với camera
+    nhìn thẳng từ trên xuống. Khi đó học màu từng điểm trên băng từ các khung đã dùng để hiệu chỉnh."""
+    sc = Scanner(cal['camera']); ims = [grab(video, t, SW, SH) for t in cal.get('frames_used', [])[:8]]
+    ims = [im for im in ims if im]
+    if not ims: return None
+    dark = statistics.median(sum(1 for p in sc.rail_pts if 0 <= p[0] < SW and 0 <= p[1] < SH and sum(im.get(*p)) < 300)/len(sc.rail_pts) for im in ims)
+    if dark >= 0.6: return None                                     # băng tối: cách cũ dùng tốt
+    ref = []
+    for p in sc.rail_pts:
+        if not (0 <= p[0] < SW and 0 <= p[1] < SH): ref.append(None); continue
+        cs = [im.get(*p) for im in ims]; ref.append([statistics.median(c[i] for c in cs) for i in range(3)])
+    return ref
+
+def scan(video, dur, cam, outdir, fps, chunk=600, rail_ref=None):
+    sc = Scanner(cam, rail_ref); sd = os.path.join(outdir, 'signals'); os.makedirs(sd, exist_ok=True)
     meta = os.path.join(sd, 'meta.json'); want = {'camera': [round(v, 4) for v in cam], 'fps': fps}
+    if rail_ref: want['rail'] = True                                 # chỉ thêm khi có: không làm mất bộ đệm cũ
     if not os.path.exists(meta) or json.load(open(meta)) != want:      # đổi camera / fps -> quét lại
         for fn in os.listdir(sd): os.remove(os.path.join(sd, fn))
         json.dump(want, open(meta, 'w'))
@@ -426,6 +450,8 @@ def fmt(t): return f'{int(t//3600)}:{int(t%3600//60):02d}:{t%60:04.1f}' if t >= 
 def short_id(video):
     b = os.path.splitext(os.path.basename(video))[0]
     if 'Media_' in b: return b.split('Media_')[1][:11]
+    import unicodedata                                                  # tên file clip: chỉ ASCII (vd "Dương" -> "duong")
+    b = unicodedata.normalize('NFKD', b.replace('đ', 'd').replace('Đ', 'D')).encode('ascii', 'ignore').decode()
     return ''.join(ch for ch in b if ch.isalnum())[:16].lower()
 
 # ------------------------------------------------------------------ main
@@ -443,9 +469,13 @@ def main():
     elif os.path.exists(cf): cal = json.load(open(cf, encoding='utf-8'))
     else:
         print('1) Hiệu chỉnh camera…'); cal = calibrate_video(video, dur); json.dump(cal, open(cf, 'w'), indent=1)
+    tf.set_cloth(cal.get('cloth'))                                   # nỉ màu (vd WPA 2025 xanh dương); None = nỉ xám
     print(f'   camera: {[round(v, 2) for v in cal["camera"]]}  rms {cal["fit_rms_px"]:.2f}px  ({len(cal.get("frames_used", [])) or "file có sẵn"} khung)')
+    if 'rail_ref' not in cal and cal.get('frames_used'):
+        cal['rail_ref'] = learn_rail(video, cal); json.dump(cal, open(cf, 'w'), indent=1)
+        if cal['rail_ref']: print('   bàn băng sáng: dùng màu băng học từ khung hiệu chỉnh để nhận camera đầu bàn')
     if a.stage == 'calib': return
-    print('2) Quét nhanh…'); sig = scan(video, dur, cal['camera'], outdir, a.fps)
+    print('2) Quét nhanh…'); sig = scan(video, dur, cal['camera'], outdir, a.fps, rail_ref=cal.get('rail_ref'))
     print(f'   {sum(s["ov"] for s in sig)}/{len(sig)} mẫu là camera trên cao')
     if a.stage == 'scan': return
     print('3) Tìm sự kiện…'); lay = stable_layouts(sig); ev = find_events(sig, lay)
@@ -472,7 +502,7 @@ def main():
         # khung cắt: biết lúc đánh -> quanh lúc đánh; không biết (đang chiếu cận cảnh) -> giữ tới khi bi rơi / thế mới hiện ra
         t_pre, t_post = m['t_pre'], e['B']['t0']
         end = (e['t_vanish']+2.5) if e['t_vanish'] else t_post+1
-        if e['stroke'] is not None: start = max(0, e['stroke']-4); end = min(end, start+18)
+        if e['stroke'] is not None: start = max(0, e['stroke']-4); end = max(min(end, start+18), start+10)   # đủ thời gian thấy bi rơi
         else:
             start = max(0, t_pre-4); end = min(end, start+44)
             if e['t_vanish'] is None:
