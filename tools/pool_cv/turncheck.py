@@ -81,14 +81,16 @@ class ArrowModelWPM(ArrowModelWPC):
 
 # Tên hai cơ thủ theo vị trí trên bảng điểm (trái, phải) khi khác thứ tự trong tên file.
 BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening'),
-                 'Joshua Filler vs Ko Pin Yi  Semi-Final _2024 World Pool Masters': ('Joshua Filler', 'Ko Pin Yi')}
+                 'Joshua Filler vs Ko Pin Yi  Semi-Final _2024 World Pool Masters': ('Joshua Filler', 'Ko Pin Yi'),
+                 'Shane-Van-Boening-vs-Jayson-Shaw-Quarter-Final-2024-World-Pool-Masters': ('Shane Van Boening', 'Jayson Shaw'),
+                 'Alex-Pagulayan-vs-Shane-Van-Boening-2023-Premier-League-Pool': ('Shane Van Boening', 'Alex Pagulayan')}
 
 def arrow_model(video):
     b = os.path.basename(video)
     names = next((v for k, v in BOARD_PLAYERS.items() if k in b), None) or players_of(video)
     if not names: return None
     if 'WORLD-PO' in b: return ArrowModelWPC(*names)
-    if 'World Pool Masters' in b: return ArrowModelWPM(*names)
+    if 'World Pool Masters' in b.replace('-', ' '): return ArrowModelWPM(*names)
     if 'Premier League' in b.replace('-', ' '): return (ArrowModel2023 if '2023' in b else ArrowModel)(*names)
     return None
 
