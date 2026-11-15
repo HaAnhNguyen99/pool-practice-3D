@@ -79,11 +79,24 @@ class ArrowModelWPM(ArrowModelWPC):
     box = (510, 612, 260, 44)
     WIN = {'L': (50, 64), 'R': (195, 209)}; REF = {'L': (32, 47), 'R': (212, 224)}; ROWS = (12, 34)
 
+class ArrowModelUSO24(ArrowModelWPC):
+    """US Open Pool Championship 2024 (WNT): thanh xanh tím, mũi tên trắng hai bên ô 'Race to'."""
+    box = (490, 610, 300, 50)
+    WIN = {'L': (70, 84), 'R': (214, 229)}; REF = {'L': (55, 67), 'R': (231, 245)}; ROWS = (22, 42); REFR = (32, 75)
+
+class ArrowModelMC(ArrowModelUSO24):
+    """Mosconi Cup 2025: cùng vị trí với US Open 2024, nhưng thanh trái xanh (Europe), thanh phải đỏ (USA)."""
+    REFR = (20, 130)
+
 # Tên hai cơ thủ theo vị trí trên bảng điểm (trái, phải) khi khác thứ tự trong tên file.
 BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening'),
                  'Joshua Filler vs Ko Pin Yi  Semi-Final _2024 World Pool Masters': ('Joshua Filler', 'Ko Pin Yi'),
                  'Shane-Van-Boening-vs-Jayson-Shaw-Quarter-Final-2024-World-Pool-Masters': ('Shane Van Boening', 'Jayson Shaw'),
-                 'Alex-Pagulayan-vs-Shane-Van-Boening-2023-Premier-League-Pool': ('Shane Van Boening', 'Alex Pagulayan')}
+                 'Alex-Pagulayan-vs-Shane-Van-Boening-2023-Premier-League-Pool': ('Shane Van Boening', 'Alex Pagulayan'),
+                 'Joshua-Filler-vs-Shane-Van-Boening-Semi-Finals-2024-US-Open': ('Joshua Filler', 'Shane Van Boening'),
+                 'Fedor-Gorst-vs-Joshua-Filler-Final-2024-World-Pool-Masters': ('Fedor Gorst', 'Joshua Filler'),
+                 'Team-Europe-vs-Team-USA-THE-ALLY-PALLY-ROAR-Mosconi-Cup': ('Team Europe', 'Team USA'),
+                 'Jayson-Shaw-vs-Skyler-Woodward-THE-CAPTAINS-COLLIDE-Mosconi-Cup': ('Jayson Shaw', 'Skyler Woodward')}
 
 def arrow_model(video):
     b = os.path.basename(video)
@@ -91,6 +104,8 @@ def arrow_model(video):
     if not names: return None
     if 'WORLD-PO' in b: return ArrowModelWPC(*names)
     if 'World Pool Masters' in b.replace('-', ' '): return ArrowModelWPM(*names)
+    if 'US Open' in b.replace('-', ' ') and '2024' in b: return ArrowModelUSO24(*names)
+    if 'Mosconi' in b: return ArrowModelMC(*names)
     if 'Premier League' in b.replace('-', ' '): return (ArrowModel2023 if '2023' in b else ArrowModel)(*names)
     return None
 
