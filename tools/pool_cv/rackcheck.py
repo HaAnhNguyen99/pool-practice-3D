@@ -102,6 +102,7 @@ def check(s, cal, cfg, names, sig, lay):
     if not cues: return {'verdict': 'unknown', 'reason': 'không thấy bi cái ở khung trước'}, col
     stroke = s['stroke'] or s['t_pre']
     if len(pre) == 2:                                                   # bi cái + bi 10: cú kết thúc ván
+        if not cfg: return {'verdict': 'unknown', 'reason': 'cuối ván: không có bảng điểm để xác nhận'}, col
         ch = score_change(s['video'], cfg, s['t_pre']-2, stroke+RACK_WIN+15)
         if not ch: return {'verdict': 'unknown', 'reason': 'cuối ván: không thấy tỉ số đổi'}, 'blue'
         r, t = ch
@@ -120,7 +121,7 @@ def check(s, cal, cfg, names, sig, lay):
     if any(S._d(b['table'], obb['table']) < 1.5 for b in post): return {'verdict': 'unknown', 'reason': f'chỗ bi mục tiêu chưa trống ({fmt(tp)})'}, col
     if len(post) != len(pre)-1 or not any(S.plain_white(b) for b in post):
         return {'verdict': 'unknown', 'reason': f'số bi {len(pre)} -> {len(post)} ({fmt(tp)})'}, col
-    if score_change(s['video'], cfg, s['t_pre']-2, tp+1):
+    if cfg and score_change(s['video'], cfg, s['t_pre']-2, tp+1):
         return {'verdict': 'unknown', 'reason': 'tỉ số đổi giữa chừng'}, col
     return {'verdict': 'ok', 'reason': f'giữa ván: {len(pre)} -> {len(post)} bi, chỗ bi mục tiêu trống ({fmt(tp)})'}, col
 
@@ -135,7 +136,8 @@ def main():
         for s in shots:
             if s.get('manual'): continue                                 # đã soát tay: không ghi đè
             cfg = cal.get('board') or board_of(s['video']); names = players(s['video'])      # vùng tỉ số: file hiệu chỉnh hoặc BOARDS
-            if not cfg or not names: s['turn'] = {'verdict': 'unknown', 'reason': 'chưa có vùng bảng điểm cho trận này'}; continue
+            if not names: s['turn'] = {'verdict': 'unknown', 'reason': 'không đọc được tên cơ thủ từ tên file'}; continue
+            if not cfg and not cal.get('no_board'): s['turn'] = {'verdict': 'unknown', 'reason': 'chưa có vùng bảng điểm cho trận này'}; continue
             s['turn'], col = check(s, cal, cfg, names, sig, lay)
             if col and col != s['ob_color']: s['turn']['ob_color_scan'] = s['ob_color']; s['ob_color'] = col
             if s['turn']['verdict'] == 'ok' and 'cuối ván' in s['turn']['reason']: s['ball'] = 10      # 10-ball: bi cuối là bi 10

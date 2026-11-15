@@ -25,9 +25,11 @@ POCKETS = [(0, 0), (50, 0), (100, 0), (0, 50), (50, 50), (100, 50)]
 VIEW = 'end'        # 'top': camera nhìn thẳng từ trên xuống (trường 'view' của file hiệu chỉnh)
 NW_SCAN, NW_FULL = 0.07, 0.08   # bi sọc quay phần trắng lên trông như bi cái: tỉ lệ điểm ảnh không trắng trong đĩa 0.9r lớn hơn
 
+WHITE = (150, 70)   # bi trắng: min kênh > WHITE[0] và chênh lệch kênh < WHITE[1]; trường 'white' của file hiệu chỉnh (ánh sáng ấm làm bi cái ám vàng)
+
 def set_view(cal):
-    global VIEW
-    VIEW = cal.get('view', 'end'); tf.set_cloth(cal.get('cloth'))
+    global VIEW, WHITE
+    VIEW = cal.get('view', 'end'); tf.set_cloth(cal.get('cloth')); WHITE = tuple(cal.get('white', (150, 70)))
 
 def non_white(im, cx, cy, r):
     """Tỉ lệ điểm ảnh không trắng trong đĩa 0.9r: bi cái ~0.02 (vài chấm), bi sọc (kể cả khi phần trắng quay lên) >= 0.1."""
@@ -177,7 +179,7 @@ class Scanner:
             disk = [im.get(int(cx)+dx, int(cy)+dy) for dx in range(-ri, ri+1) for dy in range(-ri, ri+1)
                     if dx*dx+dy*dy <= r*r and 0 <= int(cx)+dx < SW and 0 <= int(cy)+dy < SH]
             disk = [c for c in disk if abs(c[0]-ref[0])+abs(c[1]-ref[1])+abs(c[2]-ref[2]) > TH] or disk
-            whitish = sum(1 for c in disk if min(c) > 150 and max(c)-min(c) < 70)/len(disk)
+            whitish = sum(1 for c in disk if min(c) > WHITE[0] and max(c)-min(c) < WHITE[1])/len(disk)
             chrom = [c for c in disk if max(c)-min(c) > 25]
             if len(chrom) >= 0.3*len(disk): rgb = tuple(statistics.median(c[q] for c in chrom) for q in range(3))
             else: rgb = tuple(statistics.median(c[q] for c in disk) for q in range(3))
@@ -191,7 +193,7 @@ class Scanner:
 
 def color_class(c):
     r, g, b = c; mx, mn = max(c), min(c); l = (r+g+b)/3
-    if mn > 140 and mx-mn < 70: return 'white'
+    if mn > WHITE[0]-10 and mx-mn < WHITE[1]: return 'white'
     if mx-mn <= 25: return 'black' if l < 75 else 'grey'
     if tf.CLOTH and mx == b and g >= r-10 and l < 90: return 'black'     # nỉ xanh dương: bi đen bị ám xanh
     # hue
@@ -222,7 +224,8 @@ def learn_rail(video, cal):
 def scan(video, dur, cam, outdir, fps, chunk=600, rail_ref=None):
     sc = Scanner(cam, rail_ref); sd = os.path.join(outdir, 'signals'); os.makedirs(sd, exist_ok=True)
     meta = os.path.join(sd, 'meta.json'); want = {'camera': [round(v, 4) for v in cam], 'fps': fps}
-    if rail_ref: want['rail'] = True                                 # chỉ thêm khi có: không làm mất bộ đệm cũ
+    if rail_ref: want['rail'] = True
+    if WHITE != (150, 70): want['white'] = list(WHITE)                 # đổi ngưỡng bi trắng -> quét lại                                 # chỉ thêm khi có: không làm mất bộ đệm cũ
     if not os.path.exists(meta) or json.load(open(meta)) != want:      # đổi camera / fps -> quét lại
         for fn in os.listdir(sd): os.remove(os.path.join(sd, fn))
         json.dump(want, open(meta, 'w'))

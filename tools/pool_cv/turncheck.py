@@ -88,6 +88,20 @@ class ArrowModelMC(ArrowModelUSO24):
     """Mosconi Cup 2025: cùng vị trí với US Open 2024, nhưng thanh trái xanh (Europe), thanh phải đỏ (USA)."""
     REFR = (20, 130)
 
+class ArrowModelEU22(ArrowModelWPC):
+    """European Open 2022 (WNT): thanh xanh tím, mũi tên sát ô 'Race to'."""
+    box = (490, 615, 300, 50)
+    WIN = {'L': (60, 77), 'R': (225, 240)}; REF = {'L': (45, 57), 'R': (240, 244)}; ROWS = (12, 35); REFR = (15, 120)
+
+class ArrowModelMC22(ArrowModelWPC):
+    """Mosconi Cup 2022: thanh trái đỏ (USA), phải xanh (Europe)."""
+    box = (490, 600, 300, 50)
+    WIN = {'L': (62, 77), 'R': (225, 240)}; REF = {'L': (45, 57), 'R': (243, 255)}; ROWS = (12, 37); REFR = (15, 140)
+
+class ArrowModelUSO21(ArrowModelUSO24):
+    """US Open 2021: như 2024 nhưng mũi tên phải lệch sang phải vài px."""
+    WIN = {'L': (70, 84), 'R': (231, 246)}; REF = {'L': (55, 67), 'R': (249, 257)}; REFR = (15, 75)
+
 # Tên hai cơ thủ theo vị trí trên bảng điểm (trái, phải) khi khác thứ tự trong tên file.
 BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane Van Boening'),
                  'Joshua Filler vs Ko Pin Yi  Semi-Final _2024 World Pool Masters': ('Joshua Filler', 'Ko Pin Yi'),
@@ -96,7 +110,9 @@ BOARD_PLAYERS = {'Shane-Van-Boening-VS-Ko-Pin-Yi-WORLD-PO': ('Ko Pin Yi', 'Shane
                  'Joshua-Filler-vs-Shane-Van-Boening-Semi-Finals-2024-US-Open': ('Joshua Filler', 'Shane Van Boening'),
                  'Fedor-Gorst-vs-Joshua-Filler-Final-2024-World-Pool-Masters': ('Fedor Gorst', 'Joshua Filler'),
                  'Team-Europe-vs-Team-USA-THE-ALLY-PALLY-ROAR-Mosconi-Cup': ('Team Europe', 'Team USA'),
-                 'Jayson-Shaw-vs-Skyler-Woodward-THE-CAPTAINS-COLLIDE-Mosconi-Cup': ('Jayson Shaw', 'Skyler Woodward')}
+                 'Jayson-Shaw-vs-Skyler-Woodward-THE-CAPTAINS-COLLIDE-Mosconi-Cup': ('Jayson Shaw', 'Skyler Woodward'),
+                 'Johann-Chua-vs-Shane-Van-Boening-Semi-Final-2024-European-Open': ('Shane Van Boening', 'Johann Chua'),
+                 'Team-USA-vs-Team-Europe-Match-One-2022-Mosconi-Cup': ('Team USA', 'Team Europe')}
 
 def arrow_model(video):
     b = os.path.basename(video)
@@ -105,6 +121,10 @@ def arrow_model(video):
     if 'WORLD-PO' in b: return ArrowModelWPC(*names)
     if 'World Pool Masters' in b.replace('-', ' '): return ArrowModelWPM(*names)
     if 'US Open' in b.replace('-', ' ') and '2024' in b: return ArrowModelUSO24(*names)
+    if 'US Open' in b.replace('-', ' ') and '2021' in b: return ArrowModelUSO21(*names)
+    if 'European Open' in b.replace('-', ' ') and '2024' in b: return ArrowModelUSO24(*names)   # cùng đồ hoạ WNT 2024
+    if 'European Open' in b.replace('-', ' ') and '2022' in b: return ArrowModelEU22(*names)
+    if 'Mosconi' in b and '2022' in b: return ArrowModelMC22(*names)
     if 'Mosconi' in b: return ArrowModelMC(*names)
     if 'Premier League' in b.replace('-', ' '): return (ArrowModel2023 if '2023' in b else ArrowModel)(*names)
     return None
