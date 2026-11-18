@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pool Trainer – Mô phỏng ngắm 2D</title>
+<title>Chịu bi lát – Mô phỏng ngắm 2D</title>
+<meta name="description" content="Luyện ngắm bida lỗ trên trình duyệt: mô phỏng 3D góc cắt, bi ảo, độ chồng lấn, quiz đoán góc và thư viện clip cơ thủ chuyên nghiệp khớp theo từng thế bi.">
 <style>
 :root{--bg:#0e1015;--panel:#171a21;--line:#2a2f3a;--txt:#e6e8ee;--mut:#8b93a7;--acc:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--yel:#f5c400}
 *{box-sizing:border-box}
@@ -70,7 +71,7 @@ input[type=range]{width:100%}
     <div id="tableWrap"><canvas id="table"></canvas></div>
     <div class="hint" id="hint">Kéo <b>bi trắng</b> (bi cái) hoặc <b>bi vàng</b> (bi mục tiêu). Bấm vào một <b>lỗ</b> để chọn lỗ đích.</div>
     <div class="legend">
-      <span><i style="background:#fff"></i>Đường ngắm bi cái → bi ma</span>
+      <span><i style="background:#fff"></i>Đường ngắm bi cái → bi ảo</span>
       <span><i style="background:var(--yel)"></i>Đường bi mục tiêu → lỗ</span>
       <span><i style="background:#60a5fa"></i>Bi cái sau va chạm (stun, 90°)</span>
       <span><i style="background:#f472b6"></i>Bi cái lăn tự nhiên (follow, ≈)</span>
@@ -171,7 +172,7 @@ const state = {
   quiz: {type:'angle', revealed:false, overlapPick:null},
   drag: null
 };
-const TOGGLE_LABELS = {ghost:'Bi ma (ghost ball)', aim:'Đường ngắm', obline:'Đường vào lỗ', arc:'Cung góc cắt',
+const TOGGLE_LABELS = {ghost:'Bi ảo (ghost ball)', aim:'Đường ngắm', obline:'Đường vào lỗ', arc:'Cung góc cắt',
   stun:'Đường stun 90°', follow:'Đường follow', margin:'Vùng sai số', contact:'Điểm tiếp xúc'};
 const T = () => SIZES[state.size];
 
@@ -199,7 +200,7 @@ function geom(){
   const cosT = clamp(dot(vn,u), -1, 1), theta = Math.acos(cosT);
   const cr = cross(vn, u);
   const right = {x:-vn.y, y:vn.x};
-  const lateral = dot(sub(gb, ob), right);       // >0: bi ma nằm bên phải bi mục tiêu
+  const lateral = dot(sub(gb, ob), right);       // >0: bi ảo nằm bên phải bi mục tiêu
   const overlap = Math.max(0, 1 - Math.sin(theta));
   const offset = 2*R*Math.sin(theta);           // khoảng lệch tâm (inch)
 
@@ -211,7 +212,7 @@ function geom(){
   const gbOk = inside(gb, -0.01);
   let reason = null;
   if (theta >= 88*DEG) reason = 'Góc cắt ≥ 88°: không thể đưa bi vào lỗ này.';
-  else if (!gbOk) reason = 'Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ma.';
+  else if (!gbOk) reason = 'Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ảo.';
   else if (h <= 0) reason = 'Góc vào lỗ quá xiên: bi sẽ chạm má lỗ.';
   const possible = !reason;
   const dalpha = possible ? dphi*2*R*Math.cos(theta)/D : 0;  // sai số ngắm tại bi cái (rad)
@@ -396,7 +397,7 @@ function updateInfo(g, hide){
     </div>
     <div class="row"><span>Bi mục tiêu đi sang</span><b>${q ?? side}</b></div>
     <div class="row"><span>Độ lệch tâm ngắm (2R·sin θ)</span><b>${q ?? (g.offset/R).toFixed(2)+'R · '+(g.offset*25.4).toFixed(1)+' mm'}</b></div>
-    <div class="row"><span>Bi cái → bi ma</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Bi cái → bi ảo</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
     <div class="row"><span>Bi mục tiêu → lỗ</span><b>${(g.Lp*CM).toFixed(0)} cm</b></div>
     <div class="row"><span>Góc vào lỗ (so với trục lỗ)</span><b>${q ?? (g.beta/DEG).toFixed(0)+'°'}</b></div>
     <div class="row"><span>Sai số cho phép – hướng bi mục tiêu</span><b>${q ?? (g.possible ? '±'+(g.dphi/DEG).toFixed(2)+'°' : '—')}</b></div>
@@ -434,7 +435,7 @@ function drawPV(g, hide){
   // Vùng chồng lấn
   pctx.save(); pctx.beginPath(); pctx.arc(cx,cy,rp,0,Math.PI*2); pctx.clip();
   pctx.beginPath(); pctx.arc(cx+off,cy,rp,0,Math.PI*2); pctx.fillStyle='rgba(56,189,248,.55)'; pctx.fill(); pctx.restore();
-  // Bóng bi cái (bi ma)
+  // Bóng bi cái (bi ảo)
   pctx.beginPath(); pctx.arc(cx+off,cy,rp,0,Math.PI*2);
   pctx.fillStyle='rgba(255,255,255,.10)'; pctx.fill();
   pctx.setLineDash([5,4]); pctx.strokeStyle='#fff'; pctx.lineWidth=1.5; pctx.stroke(); pctx.setLineDash([]);

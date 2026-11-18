@@ -1,0 +1,10 @@
+# Video gốc và clip cắt từ trận đấu có bản quyền — chỉ dùng trên máy, không đưa lên repo công khai
+Training clips/
+clips/
+
+# Python
+__pycache__/
+*.pyc
+
+# Kết quả shotscan (ảnh cắt từ video thi đấu)
+scan_out/

@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Pool Trainer 3D – Luyện ngắm</title>
+<title>Chịu bi lát – Luyện ngắm 3D</title>
+<meta name="description" content="Luyện ngắm bida lỗ trên trình duyệt: mô phỏng 3D góc cắt, bi ảo, độ chồng lấn, quiz đoán góc và thư viện clip cơ thủ chuyên nghiệp khớp theo từng thế bi.">
 <style>
 :root{
   --glass:rgba(16,19,26,.80); --glass2:rgba(255,255,255,.05); --bd:rgba(255,255,255,.09);
@@ -47,6 +48,95 @@ select.ibtn option{background:#151922}
 .cutSide{display:grid;gap:4px;font-size:12.5px}
 .cutSide div{display:flex;justify-content:space-between;gap:8px}
 .cutSide span{color:var(--mut)} .cutSide b{font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-bottom:10px}
+.slot{background:var(--glass2);border:1px solid var(--bd);border-radius:8px;padding:5px 0 3px;text-align:center;cursor:pointer;color:var(--mut);font:inherit;font-size:10.5px;line-height:1.2;min-width:0}
+.slot i{display:block;font-style:normal;font-size:10px;font-weight:700;margin-top:2px;color:#3a404c;font-variant-numeric:tabular-nums}
+.slot.has{color:#c3c9d6}
+.slot.has i{color:var(--ok)}
+.slot.cur{border-color:var(--acc);color:var(--txt);background:rgba(61,214,196,.12)}
+.slot:hover{border-color:rgba(255,255,255,.3)}
+/* Trình phát clip */
+.pv{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--bd);margin-bottom:10px;user-select:none}
+.pv video,.pv img,.pv iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border:0;display:block;background:#000}
+.pv img{object-fit:cover;opacity:.85}
+.pvTop{position:absolute;left:8px;top:8px;right:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;z-index:2}
+.pvTag{background:rgba(0,0,0,.62);border-radius:7px;padding:2px 8px;font-size:11.5px;font-weight:650;color:var(--yel)}
+.pvTag.r{color:#dfe6f1;font-weight:500}
+.pvBig{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1}
+.pvBig span{width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:20px;padding-left:3px;transition:opacity .2s}
+.pv.playing .pvBig span{opacity:0}
+.pvBar{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;gap:4px;padding:18px 8px 6px;background:linear-gradient(transparent,rgba(0,0,0,.8));opacity:0;transition:opacity .2s}
+.pv:hover .pvBar,.pv:not(.playing) .pvBar,.pv.big .pvBar{opacity:1}
+.pvBtn{background:none;border:0;color:#fff;cursor:pointer;font:inherit;font-size:13px;line-height:1;padding:4px 5px;border-radius:6px;min-width:26px;font-variant-numeric:tabular-nums}
+.pvBtn:hover{background:rgba(255,255,255,.16)}
+.pvBtn.on{color:var(--acc)}
+.pvSeek{flex:1;min-width:30px;accent-color:var(--acc);height:4px;cursor:pointer}
+.pvTime{font-size:11px;color:#dfe6f1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pv.big .pvBtn{font-size:15px;padding:6px 8px}.pv.big .pvTime{font-size:12.5px}
+.pvErr{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;font-size:12.5px;color:#fecaca;background:#160c0c}
+.ciHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
+.ciHead b{font-size:14.5px}
+.ciNav{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+.ciNav .chip{padding:3px 9px}
+.ciNote{font-size:12.5px;color:#c3c9d6;margin-bottom:8px}
+.ciStats{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-bottom:10px;font-size:12px;color:var(--mut)}
+.dev b{font-variant-numeric:tabular-nums}
+.dev.ok b{color:var(--ok)}.dev.warn b{color:var(--warn)}.dev.bad b{color:var(--bad)}
+.clipAct{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ibtn.sm{padding:5px 10px;font-size:12.5px}
+.clipNav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.clipNav .chip{padding:5px 8px}
+.badge{display:inline-block;background:rgba(255,212,59,.12);color:var(--yel);border:1px solid rgba(255,212,59,.3);border-radius:7px;padding:1px 7px;font-size:12px;font-weight:600;margin-right:6px}
+.matchBan{display:flex;flex-direction:column;gap:1px;font-weight:700;font-size:13.5px;color:#0b1a17;background:linear-gradient(90deg,var(--acc),#7ee8d9);border-radius:10px;padding:7px 10px;margin-bottom:8px;animation:mbIn .35s ease}
+.matchBan small{font-weight:500;font-size:11.5px;opacity:.8}
+@keyframes mbIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.empty{font-size:13px;color:#c3c9d6;background:var(--glass2);border:1px dashed var(--bd);border-radius:10px;padding:10px;margin-bottom:8px}
+.empty a{color:var(--acc2)}
+details.add{margin-top:10px;border-top:1px solid var(--bd);padding-top:8px}
+details.add summary{cursor:pointer;color:var(--acc);font-size:13px;font-weight:600;list-style:none}
+details.add summary::-webkit-details-marker{display:none}
+.form{display:grid;gap:6px;margin-top:8px}
+.form input[type=text]{background:#11141a;border:1px solid var(--bd);border-radius:8px;color:var(--txt);padding:7px 9px;font:inherit;font-size:13px;width:100%}
+.form input[type=text]:focus{outline:none;border-color:var(--acc)}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.linkbtn{background:none;border:0;color:var(--acc2);cursor:pointer;font:inherit;font-size:12px;padding:0}
+.clipFoot{display:flex;gap:14px;margin-top:8px}
+#vidModal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:25}
+#vidModal.open{display:flex}
+#libModal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:20}
+#libModal.open{display:flex}
+#libModal .box{width:min(1240px,96vw);height:min(860px,92vh);display:flex;flex-direction:column;padding:14px}
+.libBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.libBar select{background:var(--glass2);color:inherit;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px}
+.libPlayers{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.pchip{display:flex;align-items:center;gap:6px;background:var(--glass2);border:1px solid var(--bd);color:inherit;border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+.pchip i{font-style:normal;font-size:11px;opacity:.65}
+.pchip.on{background:var(--acc);border-color:var(--acc);color:#0b1a17;font-weight:700}
+.libFr{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.libFr .pchip{padding:3px 9px;font-size:11.5px}
+.libFr .pchip:disabled{opacity:.35;cursor:default}
+.libGrid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start;grid-auto-rows:max-content;padding-right:4px}
+.lcard{background:var(--glass2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.lcard .lth{position:relative;aspect-ratio:16/9;background:#000;cursor:pointer}
+.lcard .lth img{width:100%;height:100%;object-fit:cover;display:block}
+.lcard .lth .pvTag{position:absolute;left:8px;top:8px}
+.lcard .lth .lplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;opacity:0;background:rgba(0,0,0,.35);transition:opacity .15s}
+.lcard .lth:hover .lplay{opacity:1}
+.lcard .lbody{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.lcard .lbody b{font-size:13.5px}
+.lcard .lev{font-size:11px;color:#8e97aa}
+.lcard .lnote{font-size:12px;color:#c3c9d6;flex:1}
+.lcard .clipAct{margin-top:4px}
+#vidModal .box{width:min(1240px,96vw);max-height:94vh;overflow:auto;padding:14px}
+.vmHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.vmHead b{font-size:15px}
+.vmGrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:14px;align-items:start}
+#vmFrame .pv{margin:0}
+#vmSide canvas{width:100%;height:300px;display:block;border-radius:10px;background:#0d1117;border:1px solid var(--bd);margin-bottom:10px}
+#vmSide .clipAct{margin-top:12px}
+.keys{color:var(--mut);font-size:11.5px;margin-top:10px;line-height:1.7}
+.keys kbd{background:var(--glass2);border:1px solid var(--bd);border-radius:5px;padding:0 5px;font:inherit;font-size:11px;color:var(--txt)}
+@media (max-width:900px){.vmGrid{grid-template-columns:1fr}}
 #ovCanvas{width:100%;height:190px;display:block;border-radius:12px;background:#0d1117;border:1px solid var(--bd);margin-bottom:10px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .kpi{background:var(--glass2);border:1px solid var(--bd);border-radius:12px;padding:9px 11px}
@@ -116,10 +206,13 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
   .brand b{display:none}
 }
 </style>
+<script>window.LOCAL_CLIPS=[];</script>
+<script>/* clips.js được cut_shots.py sinh lại thường xuyên: thêm tham số để trình duyệt không dùng bản cũ trong cache */
+document.write('<script src="clips/clips.js?v='+Date.now()+'"><\/script>');</script>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/"
 } }
 </script>
 </head>
@@ -142,6 +235,7 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
   <button class="ibtn" id="tableBtn">🎱 <span id="tableName">Acura Xám · 9ft</span> ▾</button>
   <button class="ibtn" id="layersBtn">Lớp hiển thị ▾</button>
   <button class="ibtn" id="refBtn">Bảng quy đổi</button>
+  <button class="ibtn pri" id="libBtn">🎬 Thư viện cú đánh</button>
 </div>
 
 <div class="pop glass" id="layersPop"></div>
@@ -175,6 +269,23 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
     <canvas id="ovCanvas"></canvas>
     <div class="aimtip" id="cutTip" style="margin-bottom:0"></div>
   </div>
+  <div id="clipCard" class="glass card">
+    <div class="cardHead"><b>🎬 Clip cơ thủ chuyên nghiệp</b><label class="mut" style="display:flex;gap:5px;align-items:center;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="clipAuto" checked style="accent-color:var(--acc)"> Tự phát</label></div>
+    <div class="slots" id="clipSlots"></div>
+    <div id="clipBody"></div>
+    <details class="add" id="clipAdd"><summary>⚙ Quản lý clip</summary>
+      <div class="form">
+        <div class="note" style="margin:0">Dựng thế bi trên bàn 3D <b>giống cú đánh trong clip</b> (kéo bi, chọn lỗ). Góc cắt của clip sẽ lấy theo thế bi đó: <b id="caTheta" style="color:var(--yel)">—</b></div>
+        <input type="text" id="caUrl" placeholder="Link YouTube (youtu.be/… hoặc youtube.com/watch?v=…)">
+        <div class="two"><input type="text" id="caStart" placeholder="Bắt đầu (mm:ss)"><input type="text" id="caEnd" placeholder="Kết thúc (mm:ss)"></div>
+        <input type="text" id="caPlayer" placeholder="Tên cơ thủ">
+        <input type="text" id="caNote" placeholder="Giải đấu / ghi chú (tuỳ chọn)">
+        <button class="ibtn pri" id="caSave">Lưu clip</button>
+        <div class="note" id="caMsg" style="margin:0"></div>
+      </div>
+    </details>
+    <div class="clipFoot"><button class="linkbtn" id="clipExport">⭳ Xuất JSON</button><button class="linkbtn" id="clipImport">⭱ Nhập JSON</button><input type="file" id="clipFile" accept=".json,application/json" hidden></div>
+  </div>
   <div id="quizCard" class="glass card hidden"></div>
   <div id="panel" class="glass card">
     <div class="cardHead"><b>Thông số cú đánh</b></div>
@@ -206,6 +317,20 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
   </div>
 </div>
 
+<div id="libModal"><div class="box glass">
+  <div class="vmHead"><b>🎬 Thư viện cú đánh của cơ thủ chuyên nghiệp <span class="mut" id="libCount"></span></b><button class="ibtn" id="libClose">✕ Đóng</button></div>
+  <div class="libBar">
+    <div class="libPlayers" id="libPlayers"></div>
+    <select id="libEvent"></select>
+    <select id="libSort"><option value="angle">Góc cắt tăng dần</option><option value="-angle">Góc cắt giảm dần</option><option value="player">Theo cơ thủ</option></select>
+  </div>
+  <div class="libFr" id="libFr"></div>
+  <div class="libGrid" id="libGrid"></div>
+</div></div>
+<div id="vidModal"><div class="box glass">
+  <div class="vmHead"><b id="vmTitle"></b><button class="ibtn" id="vmClose">✕ Đóng</button></div>
+  <div class="vmGrid"><div id="vmFrame"></div><aside id="vmSide"></aside></div>
+</div></div>
 <div id="modal"><div class="box glass">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <b>Bảng quy đổi chồng lấn ↔ góc cắt</b><button class="ibtn" id="closeModal">Đóng</button>
@@ -251,7 +376,7 @@ const state = {
   show:{ghost:true,aim:true,obline:true,arc:true,stun:true,follow:true,margin:true,contact:true,cue:true,pip:true},
   quiz:{type:'angle',revealed:true,overlapPick:null}, drag:null
 };
-const LAYERS = {ghost:'Bi ma (ghost ball)',aim:'Đường ngắm bi cái',obline:'Đường bi mục tiêu → lỗ',arc:'Cung góc cắt',
+const LAYERS = {ghost:'Bi ảo (ghost ball)',aim:'Đường ngắm bi cái',obline:'Đường bi mục tiêu → lỗ',arc:'Cung góc cắt',
   stun:'Bi cái sau chạm – stun (90°)',follow:'Bi cái sau chạm – follow',margin:'Vùng sai số cho phép',contact:'Điểm tiếp xúc',
   cue:'Cây cơ',pip:'Khung góc nhìn người chơi'};
 const T = () => SIZES[state.size];
@@ -275,22 +400,26 @@ function geom(){
   const v=sub(gb,cb), D=len(v), vn=mul(v,1/(D||1));
   const cosT=clamp(dot(vn,u),-1,1), theta=Math.acos(cosT), cr=cross(vn,u);
   const right={x:-vn.y,y:vn.x}, lateral=dot(sub(gb,ob),right);
-  const phys=theta<90*DEG;   // > 90°: bi cái phải xuyên qua bi mục tiêu mới tới được bi ma → phi vật lý
+  const phys=theta<90*DEG;   // > 90°: bi cái phải xuyên qua bi mục tiêu mới tới được bi ảo → phi vật lý
   const overlap=phys?Math.max(0,1-Math.sin(theta)):0, offset=2*R*Math.sin(Math.min(theta,Math.PI/2));
   const cosB=dot(u,P.into), beta=Math.acos(clamp(cosB,-1,1));
   const h=(P.side?SW():CW())/2*cosB-0.95*R, dphi=h>0?Math.atan(h/Lp):0;
   let reason=null;
   if(!phys) reason='Phi vật lý: góc cắt > 90°. Bi cái không thể chạm vào mặt sau của bi mục tiêu (phải đi xuyên qua bi). Hãy chọn lỗ khác hoặc đổi vị trí bi.';
   else if(theta>=85*DEG) reason='Góc cắt > 85°: chạm quá mỏng, bi mục tiêu gần như không di chuyển. Thực tế không thể đưa vào lỗ.';
-  else if(!inside(gb,-0.01)) reason='Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ma.';
+  else if(!inside(gb,-0.01)) reason='Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ảo.';
   else if(h<=0) reason='Góc vào lỗ quá xiên: bi mục tiêu sẽ chạm má lỗ.';
   const possible=!reason;
   const dalpha=possible?dphi*2*R*Math.cos(theta)/D:0;
   let t=sub(vn,mul(u,cosT)); t=len(t)>1e-6?norm(t):{x:-u.y,y:u.x};
   const s=Math.sin(theta), thetaC=Math.atan2(s*Math.cos(theta),s*s+0.4);
   const fdir=rot(vn,(Math.sign(cross(vn,t))||1)*thetaC);
-  const da=dalpha/DEG, diff=possible?clamp(100*Math.log(3/Math.max(da,1e-4))/Math.log(3/0.12),0,100):100;
-  return {P,u,gb,D,vn,theta,cr,lateral,overlap,offset,Lp,beta,dphi,dalpha,possible,phys,reason,t,thetaC,fdir,diff};
+  // Độ khó = góc cắt (0–70, tăng đều theo θ) + khoảng cách & độ mở lỗ (0–30).
+  // Phần khoảng cách dùng sai số ngắm của cú thẳng cùng khoảng cách (bỏ cos θ) để không tính góc hai lần.
+  const diffAng=possible?70*Math.pow(Math.sin(theta),1.5):70;
+  const daS=possible?dphi*2*R/D/DEG:0, diffDist=possible?30*clamp(Math.log(3/Math.max(daS,1e-4))/Math.log(3/0.12),0,1):30;
+  const diff=possible?diffAng+diffDist:100;
+  return {P,u,gb,D,vn,theta,cr,lateral,overlap,offset,Lp,beta,dphi,dalpha,possible,phys,reason,t,thetaC,fdir,diff,diffAng,diffDist};
 }
 const FR=[[8,'Full (1)'],[7,'7/8'],[6,'3/4'],[5,'5/8'],[4,'1/2'],[3,'3/8'],[2,'1/4'],[1,'1/8'],[0,'Rất mỏng']];
 const fracLabel=ov=>FR.find(f=>f[0]===Math.round(ov*8))[1];
@@ -611,7 +740,7 @@ function update(){
   if(!hide){
     if(S.margin&&g.possible){ wedge(state.ob,ang(g.u),g.dphi,g.Lp,0x4ade80,.25); wedge(state.cb,ang(g.vn),g.dalpha,g.D,0x4ade80,.35); }
     if(S.obline) ribbon(state.ob,P.aim,0.14,0xffd43b,.95,[1.6,0.9]);
-    if(!g.phys){ // minh hoạ: muốn tới bi ma phải xuyên qua bi mục tiêu
+    if(!g.phys){ // minh hoạ: muốn tới bi ảo phải xuyên qua bi mục tiêu
       ribbon(state.cb,g.gb,0.14,0xf87171,.95,[1.0,0.7]);
       const gx=new THREE.Mesh(ballGeo,new THREE.MeshBasicMaterial({color:0xf87171,transparent:true,opacity:.22,depthWrite:false})); gx.position.set(g.gb.x,R,g.gb.y); disposables.push(gx.material); ovG.add(gx);
     }
@@ -662,9 +791,10 @@ function updatePanel(g,hide){
     <div>
       <div style="display:flex;justify-content:space-between;font-size:13px"><span class="mut">Độ khó</span><b style="color:${hide?'var(--mut)':dc}">${q??(g.possible?dl+' · '+g.diff.toFixed(0):'Không thể')}</b></div>
       <div class="meter"><i style="width:${hide?0:g.diff}%;background:${dc}"></i></div>
+      ${!hide&&g.possible?`<div class="note" style="margin-top:5px">Góc cắt <b style="color:var(--txt)">${g.diffAng.toFixed(0)}</b>/70 · Khoảng cách &amp; lỗ <b style="color:var(--txt)">${g.diffDist.toFixed(0)}</b>/30</div>`:''}
     </div>
     <div class="sec">Khoảng cách</div>
-    <div class="row"><span>Bi cái → bi ma</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Bi cái → bi ảo</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
     <div class="row"><span>Bi mục tiêu → lỗ</span><b>${(g.Lp*CM).toFixed(0)} cm</b></div>
     <div class="sec">Lỗ &amp; sai số</div>
     <div class="row"><span>Góc vào lỗ</span><b>${q??(g.beta/DEG).toFixed(0)+'°'}</b></div>
@@ -684,6 +814,7 @@ function updatePanel(g,hide){
   $('#cutOff').textContent=q??(bad?'—':(g.offset/R).toFixed(2)+'R ('+(g.offset*25.4).toFixed(0)+'mm)');
   $('#cutTip').innerHTML=hide?'Đoán góc cắt bằng thanh trượt bên dưới, rồi bấm <b>Kiểm tra</b>.':bad?'⛔ Góc cắt tối đa về lý thuyết là <b>90°</b> (chạm mỏng nhất). Trên 90° bi cái không thể chạm vào đúng điểm để đẩy bi mục tiêu về lỗ. Thực tế, góc trên khoảng 80–85° đã gần như không thể đánh vào.':'🎯 '+aimText(g);
   drawCut(g,hide);
+  renderClips(g,hide);
   const n=hide?-1:Math.round(g.overlap*8);
   document.querySelectorAll('#refTable tr[data-n]').forEach(tr=>tr.classList.toggle('cur',+tr.dataset.n===n));
 }
@@ -885,6 +1016,265 @@ document.querySelectorAll('#qTypeSeg button').forEach(b=>b.onclick=()=>{
   $('#ovChips').classList.toggle('hidden',state.quiz.type!=='overlap');
   newQuiz();
 });
+
+// ================= Clip cơ thủ chuyên nghiệp =================
+// Clip dùng chung (commit vào repo). Mỗi clip: {id, yt, start, end, player, note, angle, layout:{size,cb,ob,pocket}}
+// angle = góc cắt đo từ thế bi được dựng lại trên bàn 3D (layout), không phải con số ước đoán.
+const SEED_CLIPS = [];
+const CLIP_KEY='pooltrainer.clips.v1';
+const loadUserClips=()=>{try{return JSON.parse(localStorage.getItem(CLIP_KEY))||[]}catch{return[]}};
+const saveUserClips=a=>localStorage.setItem(CLIP_KEY,JSON.stringify(a));
+// LOCAL_CLIPS: clip cắt sẵn trên máy (clips/clips.js + clips/*.mp4, không đưa lên git)
+const allClips=()=>[...(window.LOCAL_CLIPS||[]).map(c=>({...c,seed:true,local:true})),...SEED_CLIPS.map(c=>({...c,seed:true})),...loadUserClips()];
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function ytId(u){u=String(u).trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);return m?m[1]:(/^[A-Za-z0-9_-]{11}$/.test(u)?u:null);}
+function ytUrlTime(u){const m=String(u).match(/[?&#](?:t|start)=([0-9hms]+)/);if(!m)return null;const v=m[1];
+  if(/^\d+$/.test(v))return +v;const h=+(v.match(/(\d+)h/)||[0,0])[1],mi=+(v.match(/(\d+)m/)||[0,0])[1],se=+(v.match(/(\d+)s/)||[0,0])[1];return h*3600+mi*60+se;}
+function parseTime(t){t=String(t||'').trim();if(!t)return null;if(/^\d+(\.\d+)?$/.test(t))return Math.round(+t);
+  const p=t.split(':').map(Number);if(p.some(isNaN))return NaN;return p.reduce((a,x)=>a*60+x,0);}
+const fmtTime=s=>s==null?'':`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const embedSrc=(c,mute=true)=>`https://www.youtube-nocookie.com/embed/${c.yt}?autoplay=1${mute?'&mute=1':''}&rel=0&playsinline=1&modestbranding=1${c.start!=null?'&start='+c.start:''}${c.end!=null?'&end='+c.end:''}`;
+const watchUrl=c=>`https://www.youtube.com/watch?v=${c.yt}${c.start?'&t='+c.start+'s':''}`;
+// Bộ sưu tập cố định: mỗi mức chồng lấn (ô) gắn với clip có góc rơi vào mức đó
+const SLOT_OF = a => Math.round((1-Math.sin(clamp(a,0,89.9)*DEG))*8);
+const SLOT_ANGLE = n => n===0 ? 75 : Math.asin(1-n/8)/DEG;      // góc đại diện để dựng bàn khi bấm ô
+let clipView={key:'',idx:0,playing:false,list:[],slot:-1}, autoTimer=null; const slotPick={};
+// Khớp clip mẫu: phải ĐÚNG cả ba điều kiện so với cú đánh thật trong clip
+//   1) đúng lỗ (cùng chỉ số lỗ, không tính đối xứng lật bàn)
+//   2) đúng thế bi: bi cái và bi mục tiêu đều lệch ≤ MATCH_POS inch so với vị trí đo được
+//   3) đúng góc cắt: |θ trên bàn − θ clip| ≤ MATCH_ANG độ
+// Trả về độ lệch vị trí lớn nhất (inch) hoặc null nếu không khớp.
+const MATCH_POS=2, MATCH_ANG=1.5;
+function layoutMatch(c,th){
+  const L=c.layout; if(!L||(L.size||9)!==state.size||L.pocket!==state.pocket) return null;
+  if(Math.abs(c.angle-th)>MATCH_ANG) return null;
+  const d=Math.max(len(sub(L.cb,state.cb)),len(sub(L.ob,state.ob)));
+  return d<=MATCH_POS?d:null;
+}
+function renderSlots(cur){
+  const cnt={}; allClips().forEach(c=>{const n=SLOT_OF(c.angle);cnt[n]=(cnt[n]||0)+1;});
+  $('#clipSlots').innerHTML=FR.map(([n,lab])=>`<button class="slot${cnt[n]?' has':''}${n===cur?' cur':''}" data-n="${n}" title="${lab} bi · θ≈${SLOT_ANGLE(n).toFixed(0)}°${cnt[n]?' · '+cnt[n]+' clip':' · chưa có clip'}">${n===8?'Full':n===0?'Mỏng':lab}<i>${cnt[n]||'·'}</i></button>`).join('');
+  document.querySelectorAll('#clipSlots .slot').forEach(b=>b.onclick=()=>{   // ô có clip: dựng lần lượt thế bi của từng clip; ô trống: dựng góc đại diện
+    const n=+b.dataset.n, cs=allClips().filter(c=>SLOT_OF(c.angle)===n&&c.layout).sort((a,b)=>a.angle-b.angle);
+    if(!cs.length){placeCut(SLOT_ANGLE(n),curSide());return;}
+    slotPick[n]=((slotPick[n]??-1)+1)%cs.length; applyLayout(cs[slotPick[n]]);});
+}
+function renderClips(g,hide){
+  $('#clipCard').classList.toggle('hidden',hide);
+  if(hide){pauseCardVideo();return;}
+  const th=g.theta/DEG, slot=g.phys?Math.round(g.overlap*8):-1;
+  $('#caTheta').textContent=g.phys?th.toFixed(1)+'°':'không hợp lệ (> 90°)';
+  // Ưu tiên clip có thế bi trùng vị trí đang đặt; không có thì lấy clip cùng mức chồng lấn
+  const exact=g.phys?allClips().map(c=>({...c,d:Math.abs(c.angle-th),m:layoutMatch(c,th)})).filter(c=>c.m!=null).sort((a,b)=>a.m-b.m):[];
+  const list=exact;   // chỉ chiếu clip khi đúng thế bi (bi cái + bi mục tiêu đúng chỗ, đúng lỗ, đúng góc) — không lấy clip cùng góc ở thế bi khác
+  const key=(exact.length?'M':'')+slot+'|'+list.map(c=>c.id).join(',');
+  if(key===clipView.key){ const c=clipView.list[clipView.idx]; if(c) setDev(c,th); return; }   // cùng ô: giữ video đang phát
+  clipView={key,idx:0,playing:false,list,slot,exact:exact.length>0,rate:clipView.rate||1};
+  renderSlots(slot); drawClipBody(g);
+  clearTimeout(autoTimer);
+  if(list.length&&$('#clipAuto').checked)       // tự phát (tắt tiếng) khi dừng ở ô mới
+    autoTimer=setTimeout(()=>{if(clipView.key===key&&!clipView.playing){clipView.playing=true;drawClipBody(geom());}},700);
+}
+const devClass=d=>d<2?'ok':d<5?'warn':'bad';
+function setDev(c,th){const el=$('#cDev');if(!el)return;const d=Math.abs(c.angle-th);el.textContent=d.toFixed(1);el.parentElement.className='dev '+devClass(d);}
+const fmtSec=t=>!isFinite(t)?'0:00.0':`${Math.floor(t/60)}:${(t%60).toFixed(1).padStart(4,'0')}`;
+const RATES=[1,0.5,0.25];
+const rateLbl=r=>r===1?'1×':r===0.5?'½×':'¼×';
+// Khung video dùng chung cho thẻ nhỏ và cửa sổ xem lớn
+function playerHTML(c,big){
+  const tag=`<div class="pvTop"><span class="pvTag">θ ${c.angle.toFixed(1)}° · ${fracLabel(1-Math.sin(c.angle*DEG))} bi</span>${c.player?`<span class="pvTag r">${esc(c.player)}</span>`:''}</div>`;
+  if(!c.local){
+    const on=big||clipView.playing;
+    return `<div class="pv${big?' big':''}${on?' playing':''}" data-yt="1">${on?`<iframe src="${embedSrc(c,!big)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="clip"></iframe>`:
+      `<img src="https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg" alt="">${tag}<div class="pvBig"><span>▶</span></div>`}</div>`;
+  }
+  return `<div class="pv${big?' big':''}">
+    <video src="clips/${esc(c.file)}" ${c.poster?`poster="clips/${esc(c.poster)}"`:''} ${big?'':'muted'} loop playsinline preload="metadata"></video>
+    ${tag}<div class="pvBig"><span>▶</span></div>
+    <div class="pvBar">
+      <button class="pvBtn" data-a="play" title="Phát / dừng (Space)">▶</button>
+      ${big?'<button class="pvBtn" data-a="back" title="Lùi 1 khung hình (←)">⏮</button><button class="pvBtn" data-a="fwd" title="Tiến 1 khung hình (→)">⏭</button>':''}
+      <input type="range" class="pvSeek" min="0" max="1000" value="0" step="1" aria-label="Tua">
+      <span class="pvTime">0:00.0 / 0:00.0</span>
+      <button class="pvBtn" data-a="rate" title="Tốc độ phát">${rateLbl(clipView.rate||1)}</button>
+      ${big?`<button class="pvBtn" data-a="mute" title="Tắt / bật tiếng (M)">🔊</button>`:'<button class="pvBtn" data-a="big" title="Xem lớn, có tiếng">⤢</button>'}
+    </div></div>`;
+}
+function wirePlayer(root,c,{autoplay=false,onBig=null}={}){
+  const pv=root.querySelector('.pv'); if(!pv) return null;
+  if(pv.dataset.yt){ const bg=pv.querySelector('.pvBig'); if(bg) bg.onclick=()=>{clipView.playing=true;drawClipBody(geom());}; return null; }
+  const v=pv.querySelector('video'), seek=pv.querySelector('.pvSeek'), time=pv.querySelector('.pvTime'), btn=a=>pv.querySelector(`[data-a="${a}"]`);
+  const setRate=r=>{clipView.rate=r;v.defaultPlaybackRate=r;v.playbackRate=r;btn('rate').textContent=rateLbl(r);};
+  setRate(clipView.rate||1);
+  const toggle=()=>v.paused?v.play().catch(()=>{}):v.pause();
+  const step=d=>{v.pause();v.currentTime=clamp(v.currentTime+d/(c.fps||25),0,v.duration||0);};
+  v.onplay=()=>{pv.classList.add('playing');btn('play').textContent='❚❚';clipView.playing=true;};
+  v.onpause=()=>{pv.classList.remove('playing');btn('play').textContent='▶';};
+  v.onloadedmetadata=v.ontimeupdate=()=>{const d=v.duration||0;if(!seek.matches(':active'))seek.value=d?Math.round(v.currentTime/d*1000):0;time.textContent=`${fmtSec(v.currentTime)} / ${fmtSec(d)}`;};
+  v.onerror=()=>{pv.insertAdjacentHTML('beforeend',`<div class="pvErr">Không tìm thấy file clip trên máy:<br>clips/${esc(c.file)}</div>`);};
+  seek.oninput=()=>{if(v.duration)v.currentTime=seek.value/1000*v.duration;};
+  pv.querySelector('.pvBig').onclick=toggle;
+  btn('play').onclick=toggle;
+  btn('rate').onclick=()=>setRate(RATES[(RATES.indexOf(clipView.rate||1)+1)%RATES.length]);
+  if(btn('back')){btn('back').onclick=()=>step(-1);btn('fwd').onclick=()=>step(1);}
+  if(btn('mute')){const m=btn('mute');m.onclick=()=>{v.muted=!v.muted;m.textContent=v.muted?'🔇':'🔊';};}
+  if(btn('big')&&onBig)btn('big').onclick=onBig;
+  if(autoplay)v.play().catch(()=>{});
+  return {v,toggle,step,mute:()=>btn('mute')&&btn('mute').click()};
+}
+const pauseCardVideo=()=>{const v=document.querySelector('#clipBody video');if(v)v.pause();};
+function drawClipBody(g){
+  const b=$('#clipBody'), {list,idx}=clipView;
+  if(!g.phys){b.innerHTML='<div class="empty">Góc cắt > 90° là phi vật lý, nên không có clip.</div>';return;}
+  if(!list.length){
+    b.innerHTML=`<div class="empty">Chưa có clip nào ở thế bi này.<br><span class="mut">Clip chỉ hiện khi bi cái và bi mục tiêu đặt đúng chỗ (lệch ≤ ${MATCH_POS}"), đúng lỗ và đúng góc cắt (lệch ≤ ${MATCH_ANG}°) như cú đánh thật. Bấm một ô có số để dựng thế bi có clip, hoặc mở 🎬 Thư viện cú đánh.</span></div>`;
+    return;
+  }
+  const c=list[idx], d=Math.abs(c.angle-g.theta/DEG);
+  b.innerHTML=`${clipView.exact?`<div class="matchBan">📍 Clip từ cơ thủ chuyên nghiệp<small>Đúng thế bi · đúng góc cắt · đúng lỗ như cú đánh thật${list.length>1?` · ${list.length} clip`:''}</small></div>`:''}${playerHTML(c,false)}
+    <div class="ciHead"><b>${esc(c.player)||'Cơ thủ'}</b>${list.length>1?`<span class="ciNav"><button class="chip" id="cPrev" title="Clip trước">◀</button>${idx+1}/${list.length}<button class="chip" id="cNext" title="Clip sau">▶</button></span>`:''}</div>
+    ${c.note||c.event?`<div class="ciNote">${esc([c.event,c.note].filter(Boolean).join(' · '))}</div>`:''}
+    <div class="ciStats"><span class="badge" style="margin:0">θ clip ${c.angle.toFixed(1)}°</span><span class="dev ${devClass(d)}">lệch <b id="cDev">${d.toFixed(1)}</b>° so với bàn</span></div>
+    <div class="clipAct">
+      ${c.layout?'<button class="ibtn sm pri" id="cLayout" title="Đặt bi giống thế bi trong clip">📐 Dựng thế bi</button>':''}
+      <button class="ibtn sm" id="cBig2" title="Xem lớn, có tiếng, xem từng khung hình">⤢ Xem lớn</button>
+      ${c.yt?`<a class="ibtn sm" href="${watchUrl(c)}" target="_blank" rel="noopener" style="text-decoration:none" title="Nguồn gốc trên YouTube">YouTube ↗</a>`:''}
+      ${c.seed?'':'<button class="ibtn sm" id="cDel" title="Xoá clip này">🗑</button>'}
+    </div>`;
+  const openBig=()=>openTheater(c);
+  wirePlayer(b,c,{autoplay:clipView.playing,onBig:openBig});
+  $('#cBig2').onclick=openBig;
+  const go=k=>{clipView.idx=(idx+k+list.length)%list.length;clipView.playing=true;drawClipBody(geom());};
+  if($('#cPrev')){$('#cPrev').onclick=()=>go(-1);$('#cNext').onclick=()=>go(1);}
+  if($('#cLayout'))$('#cLayout').onclick=()=>applyLayout(c);
+  if($('#cDel'))$('#cDel').onclick=()=>{saveUserClips(loadUserClips().filter(x=>x.id!==c.id));clipView.key='';update();};
+}
+function applyLayout(c){const L=c.layout;if(!L)return;const sizeChanged=L.size&&L.size!==state.size;if(L.size)state.size=L.size;
+  state.cb={...L.cb};state.ob={...L.ob};state.pocket=L.pocket;if(sizeChanged)rebuildTable();else update();}
+// Hình học của thế bi trong clip (không phụ thuộc state), dùng cho sơ đồ trong cửa sổ xem lớn
+function clipGeom(L){
+  const {L:TL,W}=SIZES[L.size||9], s=Math.SQRT1_2;
+  const P=[[0,0,-s,-s,0],[TL/2,0,0,-1,1],[TL,0,s,-s,0],[0,W,-s,s,0],[TL/2,W,0,1,1],[TL,W,s,s,0]].map(([x,y,ix,iy,sd])=>({x,y,aim:sd?{x:x+ix*.3,y:y+iy*.3}:{x:x-ix,y:y-iy}}));
+  const p=P[L.pocket], u=norm(sub(p.aim,L.ob)), gb=sub(L.ob,mul(u,2*R));
+  return {TL,W,P,p,gb,dCb:len(sub(gb,L.cb)),dOb:len(sub(p.aim,L.ob))};
+}
+function drawLayoutCanvas(cv,L){
+  // Bàn dựng đứng, băng x=0 (phía camera trên cao) ở dưới, y=0 ở trái: khớp hướng nhìn trong video
+  const G=clipGeom(L), dpr=devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight; cv.width=w*dpr; cv.height=h*dpr;
+  const x=cv.getContext('2d'); x.scale(dpr,dpr);
+  const pad=16, k=Math.min((w-2*pad)/G.W,(h-2*pad-12)/G.TL), ox=(w-G.W*k)/2, oy=pad, X=p=>ox+p.y*k, Y=p=>oy+(G.TL-p.x)*k;
+  x.fillStyle='#3b4250';x.fillRect(ox-6,oy-6,G.W*k+12,G.TL*k+12);
+  x.fillStyle='#8a8f95';x.fillRect(ox,oy,G.W*k,G.TL*k);
+  x.fillStyle='#0b0d11';G.P.forEach(p=>{x.beginPath();x.arc(X(p),Y(p),5.5,0,7);x.fill();});
+  x.strokeStyle='#3dd6c4';x.lineWidth=2.2;x.beginPath();x.arc(X(G.p),Y(G.p),8,0,7);x.stroke();
+  const br=Math.max(R*k,4.5);
+  x.setLineDash([4,3]);x.lineWidth=1.5;
+  x.strokeStyle='rgba(255,255,255,.95)';x.beginPath();x.moveTo(X(L.cb),Y(L.cb));x.lineTo(X(G.gb),Y(G.gb));x.stroke();
+  x.strokeStyle='#ffd43b';x.beginPath();x.moveTo(X(L.ob),Y(L.ob));x.lineTo(X(G.p.aim),Y(G.p.aim));x.stroke();
+  x.strokeStyle='rgba(255,255,255,.75)';x.beginPath();x.arc(X(G.gb),Y(G.gb),br,0,7);x.stroke();x.setLineDash([]);
+  const ball=(p,col)=>{x.fillStyle=col;x.beginPath();x.arc(X(p),Y(p),br,0,7);x.fill();x.strokeStyle='rgba(0,0,0,.55)';x.lineWidth=1;x.stroke();};
+  ball(L.ob,'#ffd43b');ball(L.cb,'#f4f1e6');
+  x.fillStyle='#8e97aa';x.font='11px system-ui,sans-serif';x.textAlign='center';x.fillText('▼ phía camera trên cao',w/2,h-3);
+}
+let theater=null;
+function openTheater(c){
+  pauseCardVideo();
+  $('#vmTitle').textContent=[c.player||'Cơ thủ',c.event,c.note].filter(Boolean).join(' · ');
+  $('#vmFrame').innerHTML=playerHTML(c,true);
+  const pl=wirePlayer($('#vmFrame'),c,{autoplay:true});
+  const L=c.layout, G=L?clipGeom(L):null, ov=1-Math.sin(c.angle*DEG);
+  $('#vmSide').innerHTML=`${L?'<canvas id="vmMap"></canvas>':''}
+    <div class="row"><span>Góc cắt θ</span><b style="color:var(--yel)">${c.angle.toFixed(1)}°</b></div>
+    <div class="row"><span>Chồng lấn</span><b>${Math.round(ov*100)}% · ${fracLabel(ov)} bi</b></div>
+    ${G?`<div class="row"><span>Bi cái → bi ảo</span><b>${Math.round(G.dCb*CM)} cm</b></div>
+    <div class="row"><span>Bi mục tiêu → lỗ</span><b>${Math.round(G.dOb*CM)} cm</b></div>`:''}
+    <div class="clipAct">${L?'<button class="ibtn sm pri" id="vmLayout">📐 Dựng thế bi này</button>':''}
+      ${c.yt?`<a class="ibtn sm" href="${watchUrl(c)}" target="_blank" rel="noopener" style="text-decoration:none">YouTube ↗</a>`:''}</div>
+    ${pl?'<div class="keys"><kbd>Space</kbd> phát/dừng · <kbd>←</kbd> <kbd>→</kbd> từng khung · <kbd>M</kbd> tiếng · <kbd>Esc</kbd> đóng</div>':''}`;
+  $('#vidModal').classList.add('open');
+  if(L){requestAnimationFrame(()=>drawLayoutCanvas($('#vmMap'),L));$('#vmLayout').onclick=()=>{applyLayout(c);closeVid();};}
+  theater=pl;
+}
+const closeVid=()=>{$('#vidModal').classList.remove('open');$('#vmFrame').innerHTML='';$('#vmSide').innerHTML='';theater=null;};
+window.addEventListener('keydown',e=>{
+  if(!$('#vidModal').classList.contains('open'))return;
+  if(e.key==='Escape'){closeVid();e.stopImmediatePropagation();return;}
+  if(!theater||(e.target instanceof Element&&e.target.matches('input[type=text]')))return;
+  if(e.key===' '){e.preventDefault();theater.toggle();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();theater.step(-1);}
+  else if(e.key==='ArrowRight'){e.preventDefault();theater.step(1);}
+  else if(e.key==='m'||e.key==='M')theater.mute();
+});
+$('#vmClose').onclick=closeVid; $('#vidModal').onclick=e=>{if(e.target.id==='vidModal')closeVid();};
+
+// ================= Thư viện cú đánh: duyệt mọi clip theo cơ thủ / giải / mức chồng lấn =================
+const lib={player:'',event:'',fr:-1,sort:'angle'};
+const evOf=c=>c.event||(c.note&&c.note.includes(' · ')?c.note.split(' · ')[0]:'');
+const thumbOf=c=>c.local?(c.poster?'clips/'+c.poster:''):(c.yt?`https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg`:'');
+function renderLib(){
+  const all=allClips(), byP={};
+  all.forEach(c=>{const p=c.player||'Chưa rõ';byP[p]=(byP[p]||0)+1;});
+  $('#libPlayers').innerHTML=[['', 'Tất cả', all.length],...Object.entries(byP).sort((a,b)=>b[1]-a[1]).map(([p,n])=>[p,p,n])]
+    .map(([v,l,n])=>`<button class="pchip${lib.player===v?' on':''}" data-p="${esc(v)}">${esc(l)}<i>${n}</i></button>`).join('');
+  const evs=[...new Set(all.map(evOf).filter(Boolean))];
+  $('#libEvent').innerHTML=`<option value="">Tất cả giải đấu</option>`+evs.map(e=>`<option${e===lib.event?' selected':''}>${esc(e)}</option>`).join('');
+  $('#libSort').value=lib.sort;
+  const base=all.filter(c=>(!lib.player||(c.player||'Chưa rõ')===lib.player)&&(!lib.event||evOf(c)===lib.event));
+  const frCnt={}; base.forEach(c=>{const n=SLOT_OF(c.angle);frCnt[n]=(frCnt[n]||0)+1;});
+  $('#libFr').innerHTML=`<button class="pchip${lib.fr<0?' on':''}" data-f="-1">Mọi mức chồng lấn</button>`+
+    FR.map(([n,lab])=>`<button class="pchip${lib.fr===n?' on':''}" data-f="${n}" ${frCnt[n]?'':'disabled'} title="θ ≈ ${SLOT_ANGLE(n).toFixed(0)}°">${n===8?'Full':lab}<i>${frCnt[n]||0}</i></button>`).join('');
+  let list=base.filter(c=>lib.fr<0||SLOT_OF(c.angle)===lib.fr);
+  const s=lib.sort;
+  list.sort(s==='-angle'?(a,b)=>b.angle-a.angle:s==='player'?(a,b)=>(a.player||'~').localeCompare(b.player||'~')||a.angle-b.angle:(a,b)=>a.angle-b.angle);
+  $('#libCount').textContent=`· ${list.length}/${all.length} cú`;
+  $('#libGrid').innerHTML=list.length?list.map((c,i)=>{const t=thumbOf(c);return `<div class="lcard">
+    <div class="lth" data-i="${i}">${t?`<img src="${esc(t)}" loading="lazy" alt="">`:''}<span class="pvTag">θ ${c.angle.toFixed(1)}° · ${fracLabel(1-Math.sin(c.angle*DEG))} bi</span><div class="lplay">▶</div></div>
+    <div class="lbody"><b>${esc(c.player)||'Chưa rõ cơ thủ'}</b>${evOf(c)?`<span class="lev">${esc(evOf(c))}</span>`:''}
+      <span class="lnote">${esc(c.event?c.note:(c.note||'').split(' · ').slice(1).join(' · ')||c.note)}</span>
+      <div class="clipAct"><button class="ibtn sm" data-v="${i}">▶ Xem</button>${c.layout?`<button class="ibtn sm pri" data-l="${i}">📐 Dựng thế bi</button>`:''}</div></div></div>`;}).join('')
+    :'<div class="empty">Không có cú nào khớp bộ lọc.</div>';
+  const g=$('#libGrid');
+  g.querySelectorAll('[data-i],[data-v]').forEach(el=>el.onclick=()=>openTheater(list[+(el.dataset.i??el.dataset.v)]));
+  g.querySelectorAll('[data-l]').forEach(el=>el.onclick=()=>{applyLayout(list[+el.dataset.l]);closeLib();});
+  $('#libPlayers').querySelectorAll('.pchip').forEach(b=>b.onclick=()=>{lib.player=b.dataset.p;lib.fr=-1;renderLib();});
+  $('#libFr').querySelectorAll('.pchip').forEach(b=>b.onclick=()=>{lib.fr=+b.dataset.f;renderLib();});
+}
+const openLib=()=>{pauseCardVideo();renderLib();$('#libModal').classList.add('open');};
+const closeLib=()=>$('#libModal').classList.remove('open');
+$('#libBtn').onclick=openLib; $('#libClose').onclick=closeLib;
+$('#libModal').onclick=e=>{if(e.target.id==='libModal')closeLib();};
+$('#libEvent').onchange=e=>{lib.event=e.target.value;lib.fr=-1;renderLib();};
+$('#libSort').onchange=e=>{lib.sort=e.target.value;renderLib();};
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#libModal').classList.contains('open')&&!$('#vidModal').classList.contains('open'))closeLib();});
+$('#caSave').onclick=()=>{
+  const g=geom(), msg=$('#caMsg'), url=$('#caUrl').value, yt=ytId(url);
+  const start=parseTime($('#caStart').value)??ytUrlTime(url), end=parseTime($('#caEnd').value);
+  const err=t=>{msg.innerHTML=`<span class="bad">${t}</span>`;};
+  if(!yt)return err('Link YouTube không hợp lệ.');
+  if(Number.isNaN(start)||Number.isNaN(end))return err('Thời gian phải dạng mm:ss hoặc số giây.');
+  if(start!=null&&end!=null&&end<=start)return err('Thời điểm kết thúc phải sau thời điểm bắt đầu.');
+  if(!g.phys)return err('Thế bi hiện tại là phi vật lý (> 90°). Hãy dựng lại thế bi.');
+  const clip={id:Date.now().toString(36),yt,start:start??0,end:end??null,player:$('#caPlayer').value.trim(),note:$('#caNote').value.trim(),
+    angle:+(g.theta/DEG).toFixed(2),layout:{size:state.size,cb:{...state.cb},ob:{...state.ob},pocket:state.pocket}};
+  saveUserClips([...loadUserClips(),clip]);
+  ['#caUrl','#caStart','#caEnd','#caNote'].forEach(k=>$(k).value='');
+  msg.innerHTML=`<span class="ok">Đã lưu clip cho góc ${clip.angle.toFixed(1)}°.</span>`;
+  clipView.key='';update();
+};
+$('#clipExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(loadUserClips(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pool-clips.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('#clipImport').onclick=()=>$('#clipFile').click();
+$('#clipFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const arr=JSON.parse(await f.text());if(!Array.isArray(arr))throw 0;
+    const ok=arr.filter(c=>c&&ytId(c.yt||'')&&typeof c.angle==='number').map(c=>({...c,id:String(c.id||Date.now().toString(36)+Math.random().toString(36).slice(2,6))}));
+    const cur=loadUserClips(),ids=new Set(cur.map(c=>c.id));saveUserClips([...cur,...ok.filter(c=>!ids.has(c.id))]);
+    $('#caMsg').innerHTML=`<span class="ok">Đã nhập ${ok.length} clip.</span>`;$('#clipAdd').open=true;clipView.key='';update();
+  }catch{$('#caMsg').innerHTML='<span class="bad">File JSON không hợp lệ.</span>';$('#clipAdd').open=true;}
+  e.target.value='';
+};
 
 // ================= Thanh trên =================
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{

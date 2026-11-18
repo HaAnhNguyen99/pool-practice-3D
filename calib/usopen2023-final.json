@@ -1,0 +1,77 @@
+{
+ "name": "US Open Pool Championship 2023 – FINAL, Sky Sports overhead/end camera",
+ "source": "training clip 1.mp4 (cut from YTSave ... IP-wATw-cus ... Gorst vs Ko Ping Chung ... 1080p.mp4)",
+ "image_size": [
+  1920,
+  1080
+ ],
+ "table": {
+  "size_ft": 9,
+  "L": 100,
+  "W": 50,
+  "units": "inch, nose-to-nose playing area"
+ },
+ "frame": "x along table: 0 = rail nearest camera (bottom of image) -> 100 far rail; y: 0 = left rail in image -> 50 right rail; z DOWN (bed z=0, ball centre z=-1.125). Same handedness as index.html (pocket 0=(0,0) bottom-left in image, 3=(0,50) bottom-right, 2=(100,0) far-left, 5=(100,50) far-right, 1/4 side pockets).",
+ "camera": [
+  -287.55743385126783,
+  25.83098607812728,
+  -112.99311650437906,
+  -0.003018890831605743,
+  0.3123786916180671,
+  -0.0019981265673305543,
+  5726.6443059447565
+ ],
+ "camera_param_names": [
+  "X",
+  "Y",
+  "Z",
+  "yaw",
+  "pitch",
+  "roll",
+  "f_px"
+ ],
+ "camera_summary": "about 288in (7.3m) behind near rail, ~113in (2.9m) high, pitch 17.9 deg down, f=5727px (telephoto), principal point = image centre",
+ "image_lines": {
+  "L": {
+   "form": "x=a*y+b",
+   "a": -0.2199,
+   "b": 687.29,
+   "world": "y=0, z=-1.43 (left cushion nose)"
+  },
+  "R": {
+   "form": "x=a*y+b",
+   "a": 0.1998,
+   "b": 1249.91,
+   "world": "y=50, z=-1.43 (right cushion nose)"
+  },
+  "T": {
+   "form": "y=a*x+b",
+   "a": 0.0008,
+   "b": 375.77,
+   "world": "x=100, z=0 (far cushion base on bed)"
+  },
+  "FS": {
+   "form": "y=a*x+b",
+   "a": 0.004476,
+   "b": 475.866,
+   "world": "x=75, z=0 (foot string chalk line)"
+  },
+  "N": {
+   "form": "y=a*x+b",
+   "a": 0.00325,
+   "b": 867.92,
+   "world": "x=0, z=-1.43 (near cushion nose silhouette, subtle step 510->522 brightness)"
+  }
+ },
+ "fit_rms_px": 0.74,
+ "validation": {
+  "head_spot": "cloth dot at px (960.3,738.8) projects to (25,25) – the dot pattern centre (960.8,727.6) is NOT the head spot (earlier wrong assumption, cost 2in at near end)",
+  "7_ball_frozen_left_rail": "y=1.08 (expected 1.125)",
+  "8_ball_near_rail": "x=1.57 (half hidden by near cushion)",
+  "ball_radius_px": "observed vs predicted within 0.5px for coloured balls",
+  "stable_across_segments": "far corners within ~1px at t=0.2,17,30,50,64,91s"
+ },
+ "ball_method": "ball centre = camera ray through image circle centre intersected with plane z=-1.125. Circle: blob detection vs per-row bed colour, then radial edge search on upper ~200deg of outline + fixed-radius fit (radius from camera model). White cue ball needs this refinement (its shaded lower half matches the cloth).",
+ "reuse_rule": "Same broadcast (US Open 2023, Sky overhead cam): run tools/pool_cv/edges.py+fitlines.py on one overhead frame per segment; if T/L/R lines move > ~2px, refit camera with linefit.py. Different event/venue (e.g. European Open 2023) = new calibration.",
+ "notes": "Do NOT use the near-rail bright edge (y~879) as x=0: it is the outer edge of the near cushion top, not bed level."
+}
