@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Pool Trainer 3D – Luyện ngắm</title>
+<title>Chịu bi lát – Luyện ngắm 3D</title>
+<meta name="description" content="Luyện ngắm bida lỗ trên trình duyệt: mô phỏng 3D góc cắt, bi ảo, độ chồng lấn, quiz đoán góc và thư viện clip cơ thủ chuyên nghiệp khớp theo từng thế bi.">
 <style>
 :root{
   --glass:rgba(16,19,26,.80); --glass2:rgba(255,255,255,.05); --bd:rgba(255,255,255,.09);
@@ -210,8 +211,8 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
 document.write('<script src="clips/clips.js?v='+Date.now()+'"><\/script>');</script>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/"
 } }
 </script>
 </head>
@@ -375,7 +376,7 @@ const state = {
   show:{ghost:true,aim:true,obline:true,arc:true,stun:true,follow:true,margin:true,contact:true,cue:true,pip:true},
   quiz:{type:'angle',revealed:true,overlapPick:null}, drag:null
 };
-const LAYERS = {ghost:'Bi ma (ghost ball)',aim:'Đường ngắm bi cái',obline:'Đường bi mục tiêu → lỗ',arc:'Cung góc cắt',
+const LAYERS = {ghost:'Bi ảo (ghost ball)',aim:'Đường ngắm bi cái',obline:'Đường bi mục tiêu → lỗ',arc:'Cung góc cắt',
   stun:'Bi cái sau chạm – stun (90°)',follow:'Bi cái sau chạm – follow',margin:'Vùng sai số cho phép',contact:'Điểm tiếp xúc',
   cue:'Cây cơ',pip:'Khung góc nhìn người chơi'};
 const T = () => SIZES[state.size];
@@ -399,14 +400,14 @@ function geom(){
   const v=sub(gb,cb), D=len(v), vn=mul(v,1/(D||1));
   const cosT=clamp(dot(vn,u),-1,1), theta=Math.acos(cosT), cr=cross(vn,u);
   const right={x:-vn.y,y:vn.x}, lateral=dot(sub(gb,ob),right);
-  const phys=theta<90*DEG;   // > 90°: bi cái phải xuyên qua bi mục tiêu mới tới được bi ma → phi vật lý
+  const phys=theta<90*DEG;   // > 90°: bi cái phải xuyên qua bi mục tiêu mới tới được bi ảo → phi vật lý
   const overlap=phys?Math.max(0,1-Math.sin(theta)):0, offset=2*R*Math.sin(Math.min(theta,Math.PI/2));
   const cosB=dot(u,P.into), beta=Math.acos(clamp(cosB,-1,1));
   const h=(P.side?SW():CW())/2*cosB-0.95*R, dphi=h>0?Math.atan(h/Lp):0;
   let reason=null;
   if(!phys) reason='Phi vật lý: góc cắt > 90°. Bi cái không thể chạm vào mặt sau của bi mục tiêu (phải đi xuyên qua bi). Hãy chọn lỗ khác hoặc đổi vị trí bi.';
   else if(theta>=85*DEG) reason='Góc cắt > 85°: chạm quá mỏng, bi mục tiêu gần như không di chuyển. Thực tế không thể đưa vào lỗ.';
-  else if(!inside(gb,-0.01)) reason='Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ma.';
+  else if(!inside(gb,-0.01)) reason='Bi mục tiêu sát băng: bi cái không thể tới vị trí bi ảo.';
   else if(h<=0) reason='Góc vào lỗ quá xiên: bi mục tiêu sẽ chạm má lỗ.';
   const possible=!reason;
   const dalpha=possible?dphi*2*R*Math.cos(theta)/D:0;
@@ -739,7 +740,7 @@ function update(){
   if(!hide){
     if(S.margin&&g.possible){ wedge(state.ob,ang(g.u),g.dphi,g.Lp,0x4ade80,.25); wedge(state.cb,ang(g.vn),g.dalpha,g.D,0x4ade80,.35); }
     if(S.obline) ribbon(state.ob,P.aim,0.14,0xffd43b,.95,[1.6,0.9]);
-    if(!g.phys){ // minh hoạ: muốn tới bi ma phải xuyên qua bi mục tiêu
+    if(!g.phys){ // minh hoạ: muốn tới bi ảo phải xuyên qua bi mục tiêu
       ribbon(state.cb,g.gb,0.14,0xf87171,.95,[1.0,0.7]);
       const gx=new THREE.Mesh(ballGeo,new THREE.MeshBasicMaterial({color:0xf87171,transparent:true,opacity:.22,depthWrite:false})); gx.position.set(g.gb.x,R,g.gb.y); disposables.push(gx.material); ovG.add(gx);
     }
@@ -793,7 +794,7 @@ function updatePanel(g,hide){
       ${!hide&&g.possible?`<div class="note" style="margin-top:5px">Góc cắt <b style="color:var(--txt)">${g.diffAng.toFixed(0)}</b>/70 · Khoảng cách &amp; lỗ <b style="color:var(--txt)">${g.diffDist.toFixed(0)}</b>/30</div>`:''}
     </div>
     <div class="sec">Khoảng cách</div>
-    <div class="row"><span>Bi cái → bi ma</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
+    <div class="row"><span>Bi cái → bi ảo</span><b>${(g.D*CM).toFixed(0)} cm</b></div>
     <div class="row"><span>Bi mục tiêu → lỗ</span><b>${(g.Lp*CM).toFixed(0)} cm</b></div>
     <div class="sec">Lỗ &amp; sai số</div>
     <div class="row"><span>Góc vào lỗ</span><b>${q??(g.beta/DEG).toFixed(0)+'°'}</b></div>
@@ -1185,7 +1186,7 @@ function openTheater(c){
   $('#vmSide').innerHTML=`${L?'<canvas id="vmMap"></canvas>':''}
     <div class="row"><span>Góc cắt θ</span><b style="color:var(--yel)">${c.angle.toFixed(1)}°</b></div>
     <div class="row"><span>Chồng lấn</span><b>${Math.round(ov*100)}% · ${fracLabel(ov)} bi</b></div>
-    ${G?`<div class="row"><span>Bi cái → bi ma</span><b>${Math.round(G.dCb*CM)} cm</b></div>
+    ${G?`<div class="row"><span>Bi cái → bi ảo</span><b>${Math.round(G.dCb*CM)} cm</b></div>
     <div class="row"><span>Bi mục tiêu → lỗ</span><b>${Math.round(G.dOb*CM)} cm</b></div>`:''}
     <div class="clipAct">${L?'<button class="ibtn sm pri" id="vmLayout">📐 Dựng thế bi này</button>':''}
       ${c.yt?`<a class="ibtn sm" href="${watchUrl(c)}" target="_blank" rel="noopener" style="text-decoration:none">YouTube ↗</a>`:''}</div>
