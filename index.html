@@ -2,7 +2,8 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0c10">
 <title>Chịu bi lát – Luyện ngắm 3D</title>
 <meta name="description" content="Luyện ngắm bida lỗ trên trình duyệt: mô phỏng 3D góc cắt, bi ảo, độ chồng lấn, quiz đoán góc và thư viện clip cơ thủ chuyên nghiệp khớp theo từng thế bi.">
 <style>
@@ -199,11 +200,125 @@ table.ref tr.cur td{background:rgba(61,214,196,.14)}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);z-index:30;background:#0a0c10}
 .hidden{display:none!important}
 
-@media (max-width: 900px){
+#sheetBtn{display:none}
+
+/* Máy tính bảng / màn hình hẹp */
+@media (max-width: 900px) and (min-height: 501px){
   #rightCol{top:auto;bottom:132px;left:12px;right:12px;width:auto;max-height:40vh}
   #pip{left:auto;right:12px;top:118px;bottom:auto;width:180px;height:110px}
   #guess{width:150px}
   .brand b{display:none}
+}
+
+/* Thiết bị cảm ứng: hiện sẵn điều khiển, không phụ thuộc hover */
+@media (hover:none){
+  .pvBar{opacity:1}
+  .lcard .lth .lplay{opacity:.75;background:none}
+  .ibtn:hover,.chip:hover,.slot:hover{border-color:var(--bd)}
+}
+
+/* ===== Điện thoại (màn hình đứng) ===== */
+@media (max-width: 640px) and (min-height: 501px){
+  html,body{font-size:13px}
+  .t{display:none}
+  .brand b{display:none}
+  #top{top:calc(6px + env(safe-area-inset-top));left:6px;right:6px;gap:6px;padding:6px;border-radius:14px}
+  .brand{margin-right:0}
+  #top .spacer{display:none}
+  #modeSeg{flex:1}
+  #modeSeg button{flex:1}
+  #camSeg{order:10;flex:1 1 100%}
+  #camSeg button{flex:1}
+  .seg button{padding:7px 8px}
+  .ibtn{padding:7px 10px}
+  #tableName{display:none}
+
+  /* Tấm thông số kéo lên từ dưới */
+  #rightCol{top:auto;left:6px;right:6px;width:auto;bottom:calc(68px + env(safe-area-inset-bottom));
+    max-height:calc(100dvh - 190px);gap:8px;padding:0;overscroll-behavior:contain}
+  #sheetBtn{display:flex;position:sticky;top:0;z-index:2;flex-direction:column;align-items:center;gap:4px;
+    background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);
+    border-radius:14px;color:var(--mut);font:inherit;font-size:12px;padding:6px 0 7px;cursor:pointer}
+  #sheetBtn i{width:36px;height:4px;border-radius:4px;background:#475063}
+  .card{padding:11px 12px}
+  .cutTop{margin-bottom:0}
+  .cutBig{font-size:38px;min-width:96px}
+  #ovCanvas{height:150px;margin-top:10px}
+  #cutTip{margin-top:8px}
+  .slots{gap:3px}
+  .slot{font-size:9.5px;padding:6px 0 4px}
+  /* Thu gọn: chỉ hiện góc cắt (và quiz) */
+  body:not(.sheetOpen) #rightCol{overflow:hidden}
+  body:not(.sheetOpen) #clipCard,body:not(.sheetOpen) #panel,
+  body:not(.sheetOpen) #ovCanvas,body:not(.sheetOpen) #cutTip,
+  body:not(.sheetOpen) #cutCard .cardHead{display:none}
+  body:not(.sheetOpen) #quizCard{max-height:30dvh;overflow:auto}
+  body:not(.sheetOpen) #sheetBtn{position:static}
+
+  /* Thanh dưới: 1 hàng, vuốt ngang */
+  #dock{left:6px;right:6px;bottom:calc(6px + env(safe-area-inset-bottom));transform:none;max-width:none;
+    flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;padding:8px;gap:6px;border-radius:14px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #dock::-webkit-scrollbar{display:none}
+  #dock>*,#dock>*>*{flex-shrink:0}
+  #cutChips,#ovChips{flex-wrap:nowrap!important}
+  .chip{padding:8px 10px}
+  #guess{width:120px}
+  #guessVal{font-size:18px;min-width:44px}
+
+  #pip{left:auto;right:6px;top:calc(98px + env(safe-area-inset-top));width:132px;height:84px;border-radius:10px}
+  #pip .tag{font-size:10px;padding:2px 6px}
+  #toast{bottom:auto;top:calc(100px + env(safe-area-inset-top))}
+
+  /* Popover chiếm gần hết chiều ngang */
+  .pop{left:6px!important;right:6px;width:auto!important;max-height:calc(100dvh - 120px);overflow:auto}
+
+  /* Modal toàn màn hình */
+  #libModal .box,#vidModal .box{width:100vw;height:100dvh;max-height:none;border-radius:0;border:0;
+    padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom))}
+  #vidModal .box{overflow:auto}
+  .vmHead b{font-size:13.5px}
+  .libBar{gap:6px}
+  .libPlayers{flex-wrap:nowrap;overflow-x:auto;flex:1 1 100%;scrollbar-width:none}
+  .libPlayers::-webkit-scrollbar{display:none}
+  .pchip{flex-shrink:0}
+  .libBar select{flex:1}
+  .libFr{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .libFr .pchip{flex-shrink:0}
+  .libGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .lcard .lbody{padding:6px 8px 8px}
+  .lcard .lbody b{font-size:12.5px}
+  #vmSide canvas{height:220px}
+  #modal .box{width:100vw;max-height:100dvh;overflow:auto;border-radius:0;padding:14px 10px}
+  table.ref{font-size:12px}
+  table.ref th,table.ref td{padding:5px 4px}
+  /* Tránh iOS tự phóng to khi gõ vào ô nhập */
+  .form input[type=text],.libBar select{font-size:16px}
+}
+
+/* ===== Điện thoại (màn hình ngang) ===== */
+@media (max-height: 500px){
+  .t,#tableName{display:none}
+  .brand b{display:none}
+  #top{top:6px;left:6px;right:6px;padding:5px;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #top::-webkit-scrollbar{display:none}
+  #top>*{flex-shrink:0}
+  .seg button,.ibtn{padding:5px 9px}
+  #rightCol{top:58px;right:6px;bottom:62px;width:290px;max-height:none}
+  .card{padding:10px}
+  .cutBig{font-size:34px}
+  #ovCanvas{height:120px}
+  #dock{bottom:6px;left:6px;right:312px;transform:none;max-width:none;flex-wrap:nowrap;justify-content:flex-start;
+    overflow-x:auto;padding:6px;scrollbar-width:none}
+  #dock::-webkit-scrollbar{display:none}
+  #dock>*,#dock>*>*{flex-shrink:0}
+  #cutChips,#ovChips{flex-wrap:nowrap!important}
+  #guess{width:110px}
+  #pip{left:6px;top:58px;bottom:auto;width:150px;height:86px}
+  #toast{bottom:62px}
+  .pop{max-height:calc(100dvh - 70px);overflow:auto}
+  #libModal .box,#vidModal .box{width:100vw;height:100dvh;max-height:none;border-radius:0;padding:8px}
+  #modal .box{max-height:96dvh;overflow:auto}
 }
 </style>
 <script>window.LOCAL_CLIPS=[];</script>
@@ -221,7 +336,7 @@ document.write('<script src="clips/clips.js?v='+Date.now()+'"><\/script>');</scr
 <div id="stage"></div>
 
 <div id="top" class="glass">
-  <div class="brand"><div class="dot"></div><b>Pool <span>Trainer</span> 3D</b></div>
+  <div class="brand"><div class="dot"></div><b>Chịu <span>bi lát</span></b></div>
   <div class="seg" id="modeSeg">
     <button data-v="sandbox" class="on">Mô phỏng</button>
     <button data-v="quiz">Quiz</button>
@@ -233,9 +348,9 @@ document.write('<script src="clips/clips.js?v='+Date.now()+'"><\/script>');</scr
     <button data-v="player">Người chơi</button>
   </div>
   <button class="ibtn" id="tableBtn">🎱 <span id="tableName">Acura Xám · 9ft</span> ▾</button>
-  <button class="ibtn" id="layersBtn">Lớp hiển thị ▾</button>
-  <button class="ibtn" id="refBtn">Bảng quy đổi</button>
-  <button class="ibtn pri" id="libBtn">🎬 Thư viện cú đánh</button>
+  <button class="ibtn" id="layersBtn">☰<span class="t"> Lớp hiển thị</span> ▾</button>
+  <button class="ibtn" id="refBtn">📐<span class="t"> Bảng quy đổi</span></button>
+  <button class="ibtn pri" id="libBtn">🎬<span class="t"> Thư viện cú đánh</span></button>
 </div>
 
 <div class="pop glass" id="layersPop"></div>
@@ -255,6 +370,7 @@ document.write('<script src="clips/clips.js?v='+Date.now()+'"><\/script>');</scr
 </div>
 
 <div id="rightCol">
+  <button id="sheetBtn" type="button" aria-expanded="false"><i></i><span>Xem chi tiết ▴</span></button>
   <div id="cutCard" class="glass card">
     <div class="cardHead"><b>Góc cắt</b></div>
     <div class="cutTop">
@@ -694,7 +810,8 @@ const cbMesh=new THREE.Mesh(ballGeo,new THREE.MeshPhysicalMaterial({color:0xfbfa
 const obMesh=new THREE.Mesh(ballGeo,new THREE.MeshPhysicalMaterial({map:numberTexture(),roughness:.15,clearcoat:1,clearcoatRoughness:.05}));
 obMesh.rotation.set(-Math.PI/2,0,0.6);
 [cbMesh,obMesh].forEach(m=>{m.castShadow=true;tableG.add(m);});
-const pickGeo=new THREE.SphereGeometry(R*2.3,12,8), pickMat=new THREE.MeshBasicMaterial({visible:false});
+const COARSE=matchMedia('(pointer:coarse)').matches;
+const pickGeo=new THREE.SphereGeometry(R*(COARSE?3.2:2.3),12,8), pickMat=new THREE.MeshBasicMaterial({visible:false});
 const cbPick=new THREE.Mesh(pickGeo,pickMat), obPick=new THREE.Mesh(pickGeo,pickMat);
 cbPick.userData.ball='cb'; obPick.userData.ball='ob'; tableG.add(cbPick,obPick);
 
@@ -873,7 +990,11 @@ function updateToast(g,hide){
 let tween=null;
 function presetPose(mode){
   const {L,W}=T(), a=camera.aspect, f=Math.tan(camera.fov*DEG/2);
-  if(mode==='top'){const d=Math.max((W+2*RAIL+14)/2/f,(L+2*RAIL+14)/2/(f*a)); return {pos:new THREE.Vector3(0,d,0.01),tgt:new THREE.Vector3(0,0,0)};}
+  const tall=a<0.9; // màn hình đứng (điện thoại): xoay bàn dọc theo màn hình
+  if(mode==='top'){
+    if(tall){const d=Math.max((L+2*RAIL+14)/2/f,(W+2*RAIL+14)/2/(f*a)); return {pos:new THREE.Vector3(0.01,d,0),tgt:new THREE.Vector3(0,0,0)};}
+    const d=Math.max((W+2*RAIL+14)/2/f,(L+2*RAIL+14)/2/(f*a)); return {pos:new THREE.Vector3(0,d,0.01),tgt:new THREE.Vector3(0,0,0)};}
+  if(tall){const d=Math.max(95,(W+2*RAIL)/2/(f*a)*1.05); return {pos:new THREE.Vector3(d*0.9,d*0.95,0),tgt:new THREE.Vector3(0,-2,0)};}
   const d=Math.max(95,(L+2*RAIL)/2/(f*a)*0.95); return {pos:new THREE.Vector3(0,d*0.72,d*0.78),tgt:new THREE.Vector3(0,-2,0)};
 }
 function playerPose(){
@@ -1276,6 +1397,16 @@ $('#clipFile').onchange=async e=>{
   e.target.value='';
 };
 
+// ================= Tấm thông số (điện thoại) =================
+const sheetBtn=$('#sheetBtn');
+function setSheet(open){
+  document.body.classList.toggle('sheetOpen',open); sheetBtn.setAttribute('aria-expanded',open);
+  sheetBtn.querySelector('span').textContent=open?'Thu gọn ▾':'Xem chi tiết ▴';
+  if(!open){pauseCardVideo();$('#rightCol').scrollTop=0;}
+  else update();
+}
+sheetBtn.onclick=()=>setSheet(!document.body.classList.contains('sheetOpen'));
+
 // ================= Thanh trên =================
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
@@ -1321,7 +1452,7 @@ const lp=$('#layersPop');
 Object.keys(LAYERS).forEach(k=>{const l=document.createElement('label');l.innerHTML=`<input type="checkbox" ${state.show[k]?'checked':''}> ${LAYERS[k]}`;
   l.querySelector('input').onchange=e=>{state.show[k]=e.target.checked;update();};lp.appendChild(l);});
 $('#layersBtn').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();lp.style.left=Math.min(r.left,innerWidth-272)+'px';lp.style.top=(r.bottom+8)+'px';lp.classList.toggle('open');};
-document.addEventListener('pointerdown',e=>{if(!lp.contains(e.target)&&e.target!==$('#layersBtn'))lp.classList.remove('open');});
+document.addEventListener('pointerdown',e=>{if(!lp.contains(e.target)&&!$('#layersBtn').contains(e.target))lp.classList.remove('open');});
 $('#refBtn').onclick=()=>$('#modal').classList.add('open');
 $('#closeModal').onclick=()=>$('#modal').classList.remove('open');
 $('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('open');};
@@ -1331,10 +1462,13 @@ $('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('o
   $('#refTable').innerHTML=h;})();
 
 // ================= Render loop =================
+let lastW=0;
 function resize(){
   const w=innerWidth,h=innerHeight;renderer.setSize(w,h);
   camera.aspect=w/h;camera.updateProjectionMatrix();
-  if(state.cam!=='player')setCam(state.cam,true);
+  // Điện thoại: thanh địa chỉ ẩn/hiện chỉ đổi chiều cao → giữ nguyên góc camera người dùng đang xoay
+  if(w!==lastW&&state.cam!=='player')setCam(state.cam,true);
+  lastW=w;
 }
 addEventListener('resize',resize);
 let last=performance.now();

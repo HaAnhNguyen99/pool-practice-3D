@@ -2,7 +2,8 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1015">
 <title>Chịu bi lát – Mô phỏng ngắm 2D</title>
 <meta name="description" content="Luyện ngắm bida lỗ trên trình duyệt: mô phỏng 3D góc cắt, bi ảo, độ chồng lấn, quiz đoán góc và thư viện clip cơ thủ chuyên nghiệp khớp theo từng thế bi.">
 <style>
@@ -22,6 +23,32 @@ header h1 span{color:var(--acc)}
 select{background:#222734;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
 main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;padding:14px;align-items:start}
 @media(max-width:1000px){main{grid-template-columns:1fr}}
+@media(hover:none){.btn:hover{border-color:var(--line)}}
+/* Điện thoại */
+@media(max-width:640px){
+  body{font-size:13.5px}
+  header{gap:8px;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top))}
+  header h1{font-size:15px;margin:0;flex:1 1 auto}
+  #modeSeg{order:3;flex:1 1 100%;display:flex}
+  #modeSeg button{flex:1}
+  .seg button{padding:8px 10px}
+  main{padding:8px;gap:8px}
+  canvas#table{border-radius:8px}
+  .hint{font-size:12px}
+  .legend{gap:6px 10px;font-size:11px}
+  .card{padding:10px 11px;margin-bottom:8px}
+  .chips .btn{padding:8px 11px}
+  .btn{padding:8px 11px}
+  .big{font-size:22px}
+  .toggles{grid-template-columns:1fr}
+  .toggles label{padding:4px 0}
+  canvas#pv{height:170px}
+  #refCard{overflow-x:auto}
+  table.ref{font-size:11.5px}
+  table.ref td,table.ref th{padding:3px 4px}
+  input[type=range]{height:28px}
+  select{font-size:16px}
+}
 #tableWrap{width:100%}
 canvas#table{width:100%;display:block;touch-action:none;border-radius:14px;cursor:grab}
 .hint{color:var(--mut);font-size:12.5px;margin:8px 2px}
@@ -56,7 +83,7 @@ input[type=range]{width:100%}
 </head>
 <body>
 <header>
-  <h1>🎱 Pool <span>Trainer</span></h1>
+  <h1>🎱 Chịu <span>bi lát</span></h1>
   <div class="seg" id="modeSeg">
     <button data-mode="sandbox" class="on">Mô phỏng tự do</button>
     <button data-mode="quiz">Quiz đoán góc</button>
@@ -477,12 +504,15 @@ cv.addEventListener('pointerdown', e=>{
   const p = toTable(e);
   const lock = state.mode==='quiz' && !state.quiz.revealed;
   if (!lock){
-    if (len(sub(p,state.cb)) < 2.6*R) state.drag = 'cb';
-    else if (len(sub(p,state.ob)) < 2.6*R) state.drag = 'ob';
+    // Ngón tay: vùng chạm tối thiểu ~22px quanh bi
+    const hit = Math.max(2.6*R, (e.pointerType==='touch' ? 22 : 10)/scale);
+    const dc = len(sub(p,state.cb)), dob = len(sub(p,state.ob));
+    if (dc < hit && dc <= dob) state.drag = 'cb';
+    else if (dob < hit) state.drag = 'ob';
   }
   if (state.drag){ cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing'; return; }
   if (!lock){
-    const ps = pockets(); let best=-1, bd=6;
+    const ps = pockets(); let best=-1, bd=Math.max(6, (e.pointerType==='touch' ? 26 : 0)/scale);
     ps.forEach((q,i)=>{ const d=len(sub(p,q)); if(d<bd){bd=d;best=i;} });
     if (best >= 0){ state.pocket = best; render(); }
   }
